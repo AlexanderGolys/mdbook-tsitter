@@ -1,4 +1,4 @@
-# mdbook-tree-sitter
+# mdbook-treesitter
 
 An [mdBook](https://rust-lang.github.io/mdBook/) preprocessor that highlights
 fenced code blocks with [tree-sitter](https://tree-sitter.github.io/). It works
@@ -19,7 +19,7 @@ block whose info string names a known grammar, highlights its contents, and
 splices in a ready-made HTML block:
 
 ```html
-<pre class="tree-sitter"><code class="no-highlight language-m2">…spans…</code></pre>
+<pre class="treesitter"><code class="no-highlight language-m2">…spans…</code></pre>
 ```
 
 The `no-highlight` class stops mdBook's default highlight.js from touching the
@@ -33,20 +33,20 @@ cargo install --path .            # bundles the Macaulay2 grammar (default)
 cargo install --path . --no-default-features   # language-agnostic; configure your own grammars
 ```
 
-The `mdbook-tree-sitter` binary must be on your `PATH`.
+The `mdbook-treesitter` binary must be on your `PATH`.
 
 ## Set up a book
 
 ```toml
 # book.toml
-[preprocessor.tree-sitter]
+[preprocessor.treesitter]
 
 [output.html]
-additional-css = ["theme/tree-sitter.css"]
+additional-css = ["theme/treesitter.css"]
 ```
 
-Copy [`assets/tree-sitter.css`](assets/tree-sitter.css) to your book's
-`theme/tree-sitter.css` (or wherever `additional-css` points) and adjust the
+Copy [`assets/treesitter.css`](assets/treesitter.css) to your book's
+`theme/treesitter.css` (or wherever `additional-css` points) and adjust the
 colours to taste. See [`example/`](example/) for a complete, buildable book.
 
 ## Opting out of the bundled grammar
@@ -57,7 +57,7 @@ Macaulay2 is bundled only as a convenience. There are two ways to drop it:
   compiled into the binary and highlight only the languages you configure:
 
   ```toml
-  [preprocessor.tree-sitter]
+  [preprocessor.treesitter]
   bundled = false
   ```
 
@@ -73,7 +73,7 @@ Bundled grammars need no configuration. Any other language is added by pointing
 the preprocessor at a compiled parser shared object and a highlights query:
 
 ```toml
-[preprocessor.tree-sitter.languages.nix]
+[preprocessor.treesitter.languages.nix]
 library = "parsers/libtree-sitter-nix.so"   # compiled grammar, relative to the book root
 highlights = "queries/nix/highlights.scm"    # tree-sitter highlights query
 # symbol = "tree_sitter_nix"                  # optional; defaults to tree_sitter_<name>
@@ -112,7 +112,7 @@ ones override:
 | `keyword.operator`  | `ts-keyword ts-keyword-operator`     |
 | `string.regexp`     | `ts-string ts-string-regexp`         |
 
-The bundled [`assets/tree-sitter.css`](assets/tree-sitter.css) styles the
+The bundled [`assets/treesitter.css`](assets/treesitter.css) styles the
 [standard tree-sitter / nvim-treesitter capture names](https://github.com/nvim-treesitter/nvim-treesitter/blob/main/CONTRIBUTING.md#highlights)
 (`@comment`, `@keyword`, `@string`, `@function`, `@type`, `@variable`, …), so a
 grammar whose query uses those names is styled out of the box. Add rules for any

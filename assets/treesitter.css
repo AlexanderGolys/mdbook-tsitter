@@ -1,5 +1,5 @@
 /*
- * Default theme for mdbook-tree-sitter.
+ * Default theme for mdbook-treesitter.
  *
  * The preprocessor emits one `<span class="ts-…">` per tree-sitter capture,
  * using the capture name as the class (dots become hyphens, and each prefix is
@@ -13,7 +13,7 @@
  * (light, rust, coal, navy, ayu). Override or replace this file to taste.
  */
 
-pre.tree-sitter > code {
+pre.treesitter > code {
   /* Inherit mdBook's code background and base text colour. */
   color: inherit;
 }

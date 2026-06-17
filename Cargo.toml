@@ -1,16 +1,16 @@
 [package]
-name = "mdbook-tree-sitter"
+name = "mdbook-treesitter"
 version = "0.1.0"
 edition = "2021"
 description = "An mdBook preprocessor that highlights fenced code blocks with tree-sitter, for any language with a tree-sitter grammar."
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/AlexanderGolys/mdbook-tree-sitter"
+repository = "https://github.com/AlexanderGolys/mdbook-treesitter"
 keywords = ["mdbook", "tree-sitter", "syntax-highlighting", "preprocessor"]
 categories = ["command-line-utilities", "text-processing"]
 readme = "README.md"
 
 [[bin]]
-name = "mdbook-tree-sitter"
+name = "mdbook-treesitter"
 path = "src/main.rs"
 
 [features]
@@ -36,5 +36,5 @@ tree-sitter-highlight = "0.26"
 tree-sitter-language = "0.1"
 
 # Bundled default grammars (feature-gated). Adding more is a config concern,
-# not a code change — see the `[preprocessor.tree-sitter.languages]` table.
+# not a code change — see the `[preprocessor.treesitter.languages]` table.
 tree-sitter-macaulay2 = { version = "2.4", optional = true }

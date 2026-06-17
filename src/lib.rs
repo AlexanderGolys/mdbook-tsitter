@@ -1,7 +1,7 @@
 //! An mdBook preprocessor that highlights fenced code blocks with tree-sitter.
 //!
 //! The bundled default grammar is Macaulay2 (fence tags `m2` / `macaulay2`).
-//! Any other language is added through the `[preprocessor.tree-sitter]` table
+//! Any other language is added through the `[preprocessor.treesitter]` table
 //! in `book.toml` by pointing at a compiled parser and a highlights query — see
 //! [`config`].
 
@@ -17,12 +17,12 @@ use mdbook_preprocessor::{Preprocessor, PreprocessorContext};
 use crate::config::Config;
 use crate::grammar::Registry;
 
-/// The preprocessor entry point registered with mdBook as `tree-sitter`.
+/// The preprocessor entry point registered with mdBook as `treesitter`.
 pub struct TreeSitterPreprocessor;
 
 impl Preprocessor for TreeSitterPreprocessor {
     fn name(&self) -> &str {
-        "tree-sitter"
+        "treesitter"
     }
 
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book> {

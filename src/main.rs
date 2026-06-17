@@ -8,7 +8,7 @@ use std::process;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use mdbook_preprocessor::{self, Preprocessor, MDBOOK_VERSION};
-use mdbook_tree_sitter::TreeSitterPreprocessor;
+use mdbook_treesitter::TreeSitterPreprocessor;
 use semver::{Version, VersionReq};
 
 #[derive(Parser)]
@@ -52,7 +52,7 @@ fn preprocess(preprocessor: &dyn Preprocessor) -> Result<()> {
         VersionReq::parse(MDBOOK_VERSION).context("parsing supported mdBook version")?;
     if !supported.matches(&book_version) {
         eprintln!(
-            "mdbook-tree-sitter: built against mdBook {MDBOOK_VERSION}, running under {} — continuing",
+            "mdbook-treesitter: built against mdBook {MDBOOK_VERSION}, running under {} — continuing",
             ctx.mdbook_version,
         );
     }

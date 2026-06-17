@@ -1,10 +1,10 @@
-//! The `[preprocessor.tree-sitter]` section of `book.toml`.
+//! The `[preprocessor.treesitter]` section of `book.toml`.
 //!
 //! ```toml
-//! [preprocessor.tree-sitter]
+//! [preprocessor.treesitter]
 //!
 //! # Add a language by pointing at a compiled parser and a highlights query.
-//! [preprocessor.tree-sitter.languages.nix]
+//! [preprocessor.treesitter.languages.nix]
 //! library = "parsers/libtree-sitter-nix.so"   # compiled grammar (relative to book root)
 //! highlights = "queries/nix/highlights.scm"    # tree-sitter highlights query
 //! # symbol = "tree_sitter_nix"                 # optional; defaults to tree_sitter_<name>
@@ -31,6 +31,13 @@ pub struct Config {
     /// highlight only the languages configured here. A binary built with
     /// `--no-default-features` carries no bundled grammars regardless.
     pub bundled: bool,
+    /// Whether languages embedded in a block (via a grammar's injections query)
+    /// are highlighted with their own grammar. Only languages already
+    /// configured here are ever used — injection never loads a new grammar — so
+    /// an embedded language that is not configured is simply left as-is. Set
+    /// `inject = false` to switch injection off entirely, e.g. if an injected
+    /// grammar misbehaves.
+    pub inject: bool,
 }
 
 impl Default for Config {
@@ -38,6 +45,7 @@ impl Default for Config {
         Self {
             languages: HashMap::new(),
             bundled: true,
+            inject: true,
         }
     }
 }
@@ -67,8 +75,8 @@ impl Config {
     /// an empty configuration when the section is absent.
     pub fn from_context(ctx: &PreprocessorContext) -> Result<Self> {
         ctx.config
-            .get::<Self>("preprocessor.tree-sitter")
-            .context("invalid [preprocessor.tree-sitter] configuration")
+            .get::<Self>("preprocessor.treesitter")
+            .context("invalid [preprocessor.treesitter] configuration")
             .map(Option::unwrap_or_default)
     }
 }

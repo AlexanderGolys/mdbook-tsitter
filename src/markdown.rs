@@ -82,7 +82,7 @@ fn render_block(block: &OpenBlock, registry: &Registry) -> Option<String> {
         Ok(html) => html,
         Err(error) => {
             eprintln!(
-                "mdbook-tree-sitter: skipping `{}` block: {error:#}",
+                "mdbook-treesitter: skipping `{}` block: {error:#}",
                 block.lang
             );
             return None;
@@ -91,7 +91,7 @@ fn render_block(block: &OpenBlock, registry: &Registry) -> Option<String> {
     // `no-highlight` keeps mdBook's highlight.js from re-processing the spans we
     // already produced; the language class is preserved for theming hooks.
     Some(format!(
-        "\n<pre class=\"tree-sitter\"><code class=\"no-highlight language-{lang}\">{highlighted}</code></pre>\n",
+        "\n<pre class=\"treesitter\"><code class=\"no-highlight language-{lang}\">{highlighted}</code></pre>\n",
         lang = block.lang,
     ))
 }

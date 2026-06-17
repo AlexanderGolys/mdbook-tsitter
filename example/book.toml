@@ -1,19 +1,19 @@
 [book]
-title = "mdbook-tree-sitter example"
-authors = ["mdbook-tree-sitter"]
+title = "mdbook-treesitter example"
+authors = ["mdbook-treesitter"]
 src = "src"
 
-[preprocessor.tree-sitter]
+[preprocessor.treesitter]
 # Macaulay2 is bundled, so `m2` / `macaulay2` blocks work with no further setup.
 # Set `bundled = false` to ignore the bundled grammar and highlight only the
 # languages configured below.
 #
 # To add another language, point at a compiled parser and a highlights query:
 #
-# [preprocessor.tree-sitter.languages.nix]
+# [preprocessor.treesitter.languages.nix]
 # library = "parsers/libtree-sitter-nix.so"
 # highlights = "queries/nix/highlights.scm"
 
 [output.html]
 # Ship the class-based theme that colours the spans this preprocessor emits.
-additional-css = ["theme/tree-sitter.css"]
+additional-css = ["theme/treesitter.css"]
