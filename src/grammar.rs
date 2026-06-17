@@ -136,11 +136,16 @@ impl Registry {
             Vec::new()
         };
         for builtin in builtins {
-            if builtin
+            // Register only the aliases a configured language has not already
+            // claimed, so overriding one alias (e.g. `m2`) does not drop the
+            // grammar's other aliases (e.g. `macaulay2`).
+            let free: Vec<&str> = builtin
                 .aliases
                 .iter()
-                .all(|a| !registry.by_alias.contains_key(*a))
-            {
+                .copied()
+                .filter(|alias| !registry.by_alias.contains_key(*alias))
+                .collect();
+            if !free.is_empty() {
                 let grammar = Grammar::new(
                     builtin.name,
                     (builtin.language)(),
@@ -149,7 +154,7 @@ impl Registry {
                     "",
                     None,
                 )?;
-                registry.insert(grammar, builtin.aliases.iter().copied());
+                registry.insert(grammar, free.into_iter());
             }
         }
 

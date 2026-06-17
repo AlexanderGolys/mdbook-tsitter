@@ -19,14 +19,10 @@ pub fn rewrite(content: &str, registry: &Registry) -> String {
     for (event, range) in parser {
         match event {
             Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(info))) => {
-                let lang = info
-                    .split_whitespace()
-                    .next()
-                    .unwrap_or_default()
-                    .to_string();
                 open = Some(OpenBlock {
                     start: range.start,
-                    lang,
+                    top_level: at_line_start(content, range.start),
+                    lang: fence_language(&info).to_string(),
                     code: String::new(),
                 });
             }
@@ -52,12 +48,36 @@ pub fn rewrite(content: &str, registry: &Registry) -> String {
 /// A fenced block being accumulated between its start and end events.
 struct OpenBlock {
     start: usize,
+    /// Whether the opening fence sits at column 0. Such a fence cannot be inside
+    /// a list item or blockquote (those require indentation or a `>` prefix), so
+    /// its content carries no container prefix and the raw byte range we replace
+    /// matches the text we highlight. Indented or nested fences are left to
+    /// mdBook, since pulldown-cmark strips their prefixes from the text and the
+    /// splice would otherwise corrupt the surrounding structure.
+    top_level: bool,
     lang: String,
     code: String,
 }
 
+/// The first language token of a fence info string. mdBook/rustdoc allow
+/// comma- or space-separated annotations (e.g. `m2,no_run`), so the grammar tag
+/// is everything up to the first separator.
+fn fence_language(info: &str) -> &str {
+    info.split(|c: char| c.is_whitespace() || c == ',')
+        .find(|token| !token.is_empty())
+        .unwrap_or_default()
+}
+
+/// Whether `offset` is at the start of a line (column 0) in `content`.
+fn at_line_start(content: &str, offset: usize) -> bool {
+    offset == 0 || content.as_bytes()[offset - 1] == b'\n'
+}
+
 /// Render one block to a standalone HTML element, or `None` to leave it as-is.
 fn render_block(block: &OpenBlock, registry: &Registry) -> Option<String> {
+    if !block.top_level {
+        return None;
+    }
     let highlighted = match registry.highlight(&block.lang, &block.code)? {
         Ok(html) => html,
         Err(error) => {
