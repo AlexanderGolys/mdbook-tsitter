@@ -27,6 +27,26 @@ The `no-highlight` class stops mdBook's default highlight.js from touching the
 spans. Blocks in unconfigured languages (or with no language tag) are left
 exactly as written, so mdBook's default highlighter still handles them.
 
+## Leaving a block to mdBook
+
+Replacing a block's HTML means mdBook's own per-block machinery — highlight.js,
+and for Rust the Playground "Run" button, runnable tests, hidden `#` lines, and
+`ignore`/`no_run` annotations — no longer applies to that block (both want to own
+its HTML). This preprocessor is meant for languages mdBook highlights poorly, not
+for replacing those Rust features.
+
+So the choice is per block: configured languages are highlighted by default, but
+add the `notreesitter` tag to a fence to leave that single block to mdBook with
+all its widgets intact.
+
+````markdown
+```rust,notreesitter
+# fn main() {
+let runnable = "mdBook still adds the Run button and hides this line";
+# }
+```
+````
+
 ## Install
 
 ```sh

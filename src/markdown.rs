@@ -22,6 +22,7 @@ pub fn rewrite(content: &str, registry: &Registry) -> String {
                 open = Some(OpenBlock {
                     start: range.start,
                     top_level: at_line_start(content, range.start),
+                    skipped: fence_tokens(&info).any(|token| token == SKIP_TAG),
                     lang: fence_language(&info).to_string(),
                     code: String::new(),
                 });
@@ -45,6 +46,11 @@ pub fn rewrite(content: &str, registry: &Registry) -> String {
     splice(content, replacements)
 }
 
+/// Fence-info tag that opts a single block out of tree-sitter highlighting,
+/// leaving it to mdBook (so its highlight.js and Rust playground/run/hidden-line
+/// widgets still apply). E.g. ```` ```rust,notreesitter ````.
+const SKIP_TAG: &str = "notreesitter";
+
 /// A fenced block being accumulated between its start and end events.
 struct OpenBlock {
     start: usize,
@@ -55,17 +61,24 @@ struct OpenBlock {
     /// mdBook, since pulldown-cmark strips their prefixes from the text and the
     /// splice would otherwise corrupt the surrounding structure.
     top_level: bool,
+    /// Whether the fence carries the [`SKIP_TAG`] opt-out.
+    skipped: bool,
     lang: String,
     code: String,
+}
+
+/// The whitespace/comma-separated tokens of a fence info string, e.g.
+/// `rust,no_run` -> `rust`, `no_run`.
+fn fence_tokens(info: &str) -> impl Iterator<Item = &str> {
+    info.split(|c: char| c.is_whitespace() || c == ',')
+        .filter(|token| !token.is_empty())
 }
 
 /// The first language token of a fence info string. mdBook/rustdoc allow
 /// comma- or space-separated annotations (e.g. `rust,no_run`), so the grammar
 /// tag is everything up to the first separator.
 fn fence_language(info: &str) -> &str {
-    info.split(|c: char| c.is_whitespace() || c == ',')
-        .find(|token| !token.is_empty())
-        .unwrap_or_default()
+    fence_tokens(info).next().unwrap_or_default()
 }
 
 /// Whether `offset` is at the start of a line (column 0) in `content`.
@@ -75,7 +88,7 @@ fn at_line_start(content: &str, offset: usize) -> bool {
 
 /// Render one block to a standalone HTML element, or `None` to leave it as-is.
 fn render_block(block: &OpenBlock, registry: &Registry) -> Option<String> {
-    if !block.top_level {
+    if block.skipped || !block.top_level {
         return None;
     }
     let highlighted = match registry.highlight(&block.lang, &block.code)? {
