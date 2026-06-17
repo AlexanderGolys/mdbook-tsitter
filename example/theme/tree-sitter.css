@@ -1,0 +1,71 @@
+/*
+ * Default theme for mdbook-tree-sitter.
+ *
+ * The preprocessor emits one `<span class="ts-…">` per tree-sitter capture,
+ * using the capture name as the class (dots become hyphens, and each prefix is
+ * added too: `keyword.operator` -> `class="ts-keyword ts-keyword-operator"`).
+ * That means broad rules cascade and specific ones override. The selectors
+ * below follow the standard tree-sitter / nvim-treesitter capture names, so a
+ * grammar whose query uses those names is styled out of the box; add rules for
+ * any extra captures your grammar defines.
+ *
+ * Colours are deliberately mid-tone so they read on every bundled mdBook theme
+ * (light, rust, coal, navy, ayu). Override or replace this file to taste.
+ */
+
+pre.tree-sitter > code {
+  /* Inherit mdBook's code background and base text colour. */
+  color: inherit;
+}
+
+/* Comments and disabled-looking text. */
+.ts-comment { color: #8a8a8a; font-style: italic; }
+
+/* Literals. */
+.ts-string { color: #98971a; }
+.ts-string-special,
+.ts-string-escape { color: #689d6a; }
+.ts-string-regexp { color: #b8bb26; }
+.ts-character { color: #98971a; }
+.ts-number,
+.ts-float { color: #d65d0e; }
+.ts-boolean { color: #d65d0e; }
+.ts-constant { color: #d79921; }
+.ts-constant-builtin { color: #d79921; font-weight: 600; }
+
+/* Keywords and operators. */
+.ts-keyword { color: #cc241d; font-weight: 600; }
+.ts-keyword-operator { color: #cc241d; font-weight: normal; }
+.ts-keyword-return,
+.ts-keyword-exception { color: #cc241d; }
+.ts-conditional,
+.ts-repeat { color: #cc241d; }
+.ts-operator { color: #98863c; }
+
+/* Identifiers. */
+.ts-function,
+.ts-function-call { color: #458588; }
+.ts-function-builtin { color: #458588; font-style: italic; }
+.ts-method,
+.ts-method-call { color: #458588; }
+.ts-constructor { color: #689d6a; }
+.ts-variable { color: inherit; }
+.ts-variable-builtin { color: #cc241d; font-style: italic; }
+.ts-variable-parameter { color: #b16286; }
+.ts-property,
+.ts-field { color: #458588; }
+.ts-type,
+.ts-type-builtin { color: #d79921; }
+.ts-namespace,
+.ts-module { color: #b16286; }
+
+/* Punctuation. */
+.ts-punctuation,
+.ts-punctuation-bracket,
+.ts-punctuation-delimiter { color: inherit; opacity: 0.8; }
+.ts-punctuation-special { color: #b16286; }
+
+/* Markup-ish captures used by some grammars. */
+.ts-tag { color: #cc241d; }
+.ts-attribute { color: #b16286; }
+.ts-label { color: #b16286; }

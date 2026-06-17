@@ -1,0 +1,16 @@
+[book]
+title = "mdbook-tree-sitter example"
+authors = ["mdbook-tree-sitter"]
+src = "src"
+
+[preprocessor.tree-sitter]
+# Macaulay2 is bundled, so `m2` / `macaulay2` blocks work with no further setup.
+# To add another language, point at a compiled parser and a highlights query:
+#
+# [preprocessor.tree-sitter.languages.nix]
+# library = "parsers/libtree-sitter-nix.so"
+# highlights = "queries/nix/highlights.scm"
+
+[output.html]
+# Ship the class-based theme that colours the spans this preprocessor emits.
+additional-css = ["theme/tree-sitter.css"]
