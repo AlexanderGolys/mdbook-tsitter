@@ -1,9 +1,9 @@
 //! An mdBook preprocessor that highlights fenced code blocks with tree-sitter.
 //!
-//! The bundled default grammar is Macaulay2 (fence tags `m2` / `macaulay2`).
-//! Any other language is added through the `[preprocessor.treesitter]` table
-//! in `book.toml` by pointing at a compiled parser and a highlights query — see
-//! [`config`].
+//! Each language is configured in the `[preprocessor.treesitter]` table of
+//! `book.toml` by pointing at a compiled parser and a highlights query, and is
+//! then loaded dynamically — see [`config`]. The preprocessor is grammar-
+//! agnostic: it ships no grammar of its own.
 
 pub mod config;
 pub mod grammar;

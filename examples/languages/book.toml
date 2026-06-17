@@ -1,0 +1,35 @@
+[book]
+title = "mdbook-treesitter languages example"
+src = "src"
+
+# Every grammar is loaded dynamically from a compiled parser + highlights query.
+# Run ./setup.sh first to stage parsers/ and queries/ (both gitignored).
+[preprocessor.treesitter]
+# inject = true   # (default) highlight languages embedded via injections queries
+
+[preprocessor.treesitter.languages.macaulay2]
+library = "parsers/macaulay2.so"
+highlights = "queries/macaulay2/highlights.scm"
+aliases = ["m2", "macaulay2"]
+
+[preprocessor.treesitter.languages.rust]
+library = "parsers/rust.so"
+highlights = "queries/rust/highlights.scm"
+
+[preprocessor.treesitter.languages.lua]
+library = "parsers/lua.so"
+highlights = "queries/lua/highlights.scm"
+
+[preprocessor.treesitter.languages.haskell]
+library = "parsers/haskell.so"
+highlights = "queries/haskell/highlights.scm"
+
+[preprocessor.treesitter.languages.markdown]
+library = "parsers/markdown.so"
+highlights = "queries/markdown/highlights.scm"
+# Injections let a Markdown block sub-highlight the languages of its fenced
+# code blocks (see chapter 3).
+injections = "queries/markdown/injections.scm"
+
+[output.html]
+additional-css = ["theme/treesitter.css"]

@@ -8,19 +8,13 @@ repository = "https://github.com/AlexanderGolys/mdbook-treesitter"
 keywords = ["mdbook", "tree-sitter", "syntax-highlighting", "preprocessor"]
 categories = ["command-line-utilities", "text-processing"]
 readme = "README.md"
+# Keep example/test books out of the published package — they need external
+# parser binaries and queries and only make sense from the git repo.
+exclude = ["/examples"]
 
 [[bin]]
 name = "mdbook-treesitter"
 path = "src/main.rs"
-
-[features]
-# Macaulay2 is bundled by default so the preprocessor highlights `m2` blocks
-# with zero setup. Any other language is added through `book.toml` config and
-# dynamic grammar loading, which is always available. Build with
-# `--no-default-features` for a language-agnostic binary that carries no
-# grammar of its own.
-default = ["macaulay2"]
-macaulay2 = ["dep:tree-sitter-macaulay2"]
 
 [dependencies]
 mdbook-preprocessor = "0.5"
@@ -34,7 +28,3 @@ libloading = "0.8"
 tree-sitter = "0.26"
 tree-sitter-highlight = "0.26"
 tree-sitter-language = "0.1"
-
-# Bundled default grammars (feature-gated). Adding more is a config concern,
-# not a code change — see the `[preprocessor.treesitter.languages]` table.
-tree-sitter-macaulay2 = { version = "2.4", optional = true }

@@ -1,10 +1,9 @@
-//! Grammar resolution: maps a code-fence language tag (e.g. `m2`) to a
-//! configured tree-sitter [`HighlightConfiguration`]. Grammars come from two
-//! sources — ones compiled into the binary (feature-gated [`builtins`]) and
-//! ones loaded at runtime from shared libraries described in `book.toml`
-//! ([`load_dynamic`]). Dynamic loading is what makes the preprocessor work for
-//! *any* language: point it at a compiled parser and a highlights query and it
-//! highlights that language.
+//! Grammar resolution: maps a code-fence language tag (e.g. `rust`) to a
+//! configured tree-sitter [`HighlightConfiguration`]. Every grammar is loaded
+//! at runtime from a shared library described in `book.toml` ([`load_dynamic`]).
+//! Dynamic loading is what makes the preprocessor work for *any* language: point
+//! it at a compiled parser and a highlights query and it highlights that
+//! language.
 //!
 //! All grammars in a run share one capture-index space (see [`Registry::build`])
 //! so that spans produced by an injected sub-language resolve to the same CSS
@@ -41,9 +40,7 @@ pub struct Registry {
 }
 
 impl Registry {
-    /// Resolve all configured and built-in grammars. User-configured languages
-    /// take precedence over built-ins sharing an alias, so a project can
-    /// override a bundled grammar.
+    /// Load and configure every grammar named in `book.toml`.
     pub fn build(root: &Path, config: &Config) -> Result<Self> {
         let mut configs: Vec<HighlightConfiguration> = Vec::new();
         let mut by_alias: HashMap<String, usize> = HashMap::new();
@@ -59,29 +56,6 @@ impl Registry {
             }
         }
 
-        if config.bundled {
-            for builtin in builtins::all() {
-                // Claim only the aliases a configured language has not already
-                // taken, so overriding one alias (e.g. `m2`) does not drop the
-                // grammar's other aliases (e.g. `macaulay2`).
-                let free: Vec<&str> = builtin
-                    .aliases
-                    .iter()
-                    .copied()
-                    .filter(|alias| !by_alias.contains_key(*alias))
-                    .collect();
-                if free.is_empty() {
-                    continue;
-                }
-                let cfg = new_config(builtin.name, (builtin.language)(), builtin.highlights, "", "")?;
-                let index = configs.len();
-                configs.push(cfg);
-                for alias in free {
-                    by_alias.insert(alias.to_string(), index);
-                }
-            }
-        }
-
         // Give every grammar one shared list of recognised capture names, so a
         // capture maps to the same highlight index — and therefore the same CSS
         // class — regardless of which grammar (host or injected) produced it.
@@ -91,7 +65,13 @@ impl Registry {
         }
         let classes = render::class_attributes(&global_names);
 
-        Ok(Self { configs, by_alias, classes, inject: config.inject, _libraries: libraries })
+        Ok(Self {
+            configs,
+            by_alias,
+            classes,
+            inject: config.inject,
+            _libraries: libraries,
+        })
     }
 
     /// Highlight `source` as `lang`, or `None` if no grammar handles that fence
@@ -120,13 +100,17 @@ impl Registry {
 
         let mut renderer = HtmlRenderer::new();
         renderer
-            .render(events, source.as_bytes(), &|highlight: Highlight, out: &mut Vec<u8>| {
-                // An out-of-range index would mean a capture we never configured;
-                // fall back to an empty attribute rather than panic.
-                if let Some(attr) = self.classes.get(highlight.0) {
-                    out.extend_from_slice(attr);
-                }
-            })
+            .render(
+                events,
+                source.as_bytes(),
+                &|highlight: Highlight, out: &mut Vec<u8>| {
+                    // An out-of-range index would mean a capture we never configured;
+                    // fall back to an empty attribute rather than panic.
+                    if let Some(attr) = self.classes.get(highlight.0) {
+                        out.extend_from_slice(attr);
+                    }
+                },
+            )
             .context("rendering highlighted HTML failed")?;
 
         Ok(renderer.lines().collect())
@@ -158,20 +142,6 @@ fn union_capture_names(configs: &[HighlightConfiguration]) -> Vec<String> {
     names
 }
 
-/// Create an unconfigured highlight configuration from a language and its
-/// queries. Configuration (assigning highlight indices) happens later, once the
-/// shared capture-name list is known.
-fn new_config(
-    name: &str,
-    language: Language,
-    highlights: &str,
-    injections: &str,
-    locals: &str,
-) -> Result<HighlightConfiguration> {
-    HighlightConfiguration::new(language, name, highlights, injections, locals)
-        .with_context(|| format!("invalid tree-sitter queries for `{name}`"))
-}
-
 /// Load a grammar from a compiled parser shared library, as configured in
 /// `book.toml`. `root` is the book project root that relative paths resolve
 /// against. Returns the configuration and the library that backs it (which the
@@ -182,9 +152,14 @@ fn load_dynamic(
     root: &Path,
     inject: bool,
 ) -> Result<(HighlightConfiguration, Library)> {
-    let library_path = resolve(root, cfg.library.as_ref().ok_or_else(|| {
-        anyhow!("language `{name}` has no built-in grammar; set `library` to a parser shared object")
-    })?);
+    let library_path = resolve(
+        root,
+        cfg.library.as_ref().ok_or_else(|| {
+            anyhow!(
+                "language `{name}` needs a `library` pointing at a compiled parser shared object"
+            )
+        })?,
+    );
     let symbol = cfg
         .symbol
         .clone()
@@ -213,7 +188,8 @@ fn load_dynamic(
     };
     let locals = read_optional_query(root, cfg.locals.as_ref())?;
 
-    let config = new_config(name, language, &highlights, &injections, &locals)?;
+    let config = HighlightConfiguration::new(language, name, &highlights, &injections, &locals)
+        .with_context(|| format!("invalid tree-sitter queries for `{name}`"))?;
     Ok((config, library))
 }
 
@@ -241,29 +217,5 @@ fn read_optional_query(root: &Path, path: Option<&String>) -> Result<String> {
                 .with_context(|| format!("reading query from {}", full.display()))
         }
         None => Ok(String::new()),
-    }
-}
-
-/// Grammars compiled into the binary. Each is feature-gated so a slim build can
-/// drop the ones it does not need and rely on dynamic loading instead.
-mod builtins {
-    /// A grammar statically linked into this binary.
-    pub struct Builtin {
-        pub name: &'static str,
-        pub aliases: &'static [&'static str],
-        pub language: fn() -> tree_sitter::Language,
-        pub highlights: &'static str,
-    }
-
-    pub fn all() -> Vec<Builtin> {
-        vec![
-            #[cfg(feature = "macaulay2")]
-            Builtin {
-                name: "macaulay2",
-                aliases: &["macaulay2", "m2"],
-                language: tree_sitter_macaulay2::language,
-                highlights: include_str!("../queries/macaulay2/highlights.scm"),
-            },
-        ]
     }
 }

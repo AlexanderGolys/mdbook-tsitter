@@ -1,10 +1,11 @@
 # mdbook-treesitter
 
 An [mdBook](https://rust-lang.github.io/mdBook/) preprocessor that highlights
-fenced code blocks with [tree-sitter](https://tree-sitter.github.io/). It works
-for **any** language that has a tree-sitter grammar: point it at a compiled
-parser and a highlights query and it highlights that language. Macaulay2 is
-bundled by default, so ```` ```m2 ```` blocks highlight with no extra setup.
+fenced code blocks with [tree-sitter](https://tree-sitter.github.io/). It is
+grammar-agnostic: it ships no grammar of its own — you point it at a compiled
+parser and a highlights query, and it highlights that language. Any language
+with a tree-sitter grammar works, and embedded languages are highlighted through
+injections.
 
 Highlighting happens at build time. Each tree-sitter capture becomes a
 `<span class="ts-…">`, so colours live in a stylesheet (like the rest of
@@ -15,75 +16,73 @@ mdBook's theming) rather than being baked into the HTML.
 A preprocessor receives each chapter as Markdown and returns modified Markdown.
 This one parses the Markdown with the same parser mdBook uses
 ([pulldown-cmark](https://docs.rs/pulldown-cmark)), finds every fenced code
-block whose info string names a known grammar, highlights its contents, and
+block whose info string names a configured grammar, highlights its contents, and
 splices in a ready-made HTML block:
 
 ```html
-<pre class="treesitter"><code class="no-highlight language-m2">…spans…</code></pre>
+<pre class="treesitter"><code class="no-highlight language-rust">…spans…</code></pre>
 ```
 
 The `no-highlight` class stops mdBook's default highlight.js from touching the
-spans. Blocks in unknown languages (or with no language tag) are left exactly as
-written, so mdBook's default highlighter still handles them.
+spans. Blocks in unconfigured languages (or with no language tag) are left
+exactly as written, so mdBook's default highlighter still handles them.
 
 ## Install
 
 ```sh
-cargo install --path .            # bundles the Macaulay2 grammar (default)
-cargo install --path . --no-default-features   # language-agnostic; configure your own grammars
+cargo install mdbook-treesitter
 ```
 
 The `mdbook-treesitter` binary must be on your `PATH`.
 
 ## Set up a book
 
-```toml
-# book.toml
-[preprocessor.treesitter]
+1. Enable the preprocessor and configure a language in `book.toml`:
 
-[output.html]
-additional-css = ["theme/treesitter.css"]
-```
+   ```toml
+   [preprocessor.treesitter]
 
-Copy [`assets/treesitter.css`](assets/treesitter.css) to your book's
-`theme/treesitter.css` (or wherever `additional-css` points) and adjust the
-colours to taste. See [`example/`](example/) for a complete, buildable book.
+   [preprocessor.treesitter.languages.rust]
+   library = "parsers/rust.so"            # compiled parser, relative to the book root
+   highlights = "queries/rust/highlights.scm"
+   ```
 
-## Opting out of the bundled grammar
+2. Write the default theme into your book and reference it:
 
-Macaulay2 is bundled only as a convenience. There are two ways to drop it:
+   ```sh
+   mdbook-treesitter css > theme/treesitter.css
+   ```
 
-- **Per book, no rebuild** — set `bundled = false` to ignore every grammar
-  compiled into the binary and highlight only the languages you configure:
+   ```toml
+   [output.html]
+   additional-css = ["theme/treesitter.css"]
+   ```
 
-  ```toml
-  [preprocessor.treesitter]
-  bundled = false
-  ```
+See [`examples/languages`](examples/languages) for a complete, buildable book
+covering several languages and injection.
 
-- **Per binary** — `cargo install --no-default-features` builds a
-  language-agnostic binary that carries no grammar at all.
+## Configuration
 
-A configured language always overrides a bundled grammar that shares an alias,
-so you can also just replace `m2` rather than disabling it.
+Everything lives under `[preprocessor.treesitter]` in `book.toml`.
 
-## Adding a language
+Top-level:
 
-Bundled grammars need no configuration. Any other language is added by pointing
-the preprocessor at a compiled parser shared object and a highlights query:
+| key      | default | meaning                                                                                                                                                                                                                                                              |
+| -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `inject` | `true`  | Highlight languages embedded in a block via a grammar's injections query. Only configured languages are ever used; injection never loads a new grammar. Set `false` to switch it off (and skip loading `injections.scm`, so a broken injections query can't break highlighting). |
 
-```toml
-[preprocessor.treesitter.languages.nix]
-library = "parsers/libtree-sitter-nix.so"   # compiled grammar, relative to the book root
-highlights = "queries/nix/highlights.scm"    # tree-sitter highlights query
-# symbol = "tree_sitter_nix"                  # optional; defaults to tree_sitter_<name>
-# injections = "queries/nix/injections.scm"   # optional, for embedded languages
-# locals = "queries/nix/locals.scm"           # optional, for scope-aware highlighting
-# aliases = ["nix"]                            # fence tags; defaults to the table key
-```
+Per language, under `[preprocessor.treesitter.languages.<name>]`:
 
-The table key (`nix` here) is the default code-fence tag and the default symbol
-suffix. A configured language overrides a bundled grammar that shares an alias.
+| key          | required | meaning                                                                       |
+| ------------ | -------- | ----------------------------------------------------------------------------- |
+| `library`    | yes      | Path to the compiled parser shared object.                                    |
+| `highlights` | yes      | Path to the highlights query (`highlights.scm`).                              |
+| `symbol`     | no       | Parser constructor symbol; defaults to `tree_sitter_<name>` (`-` → `_`).      |
+| `injections` | no       | Path to an injections query, for embedded languages.                          |
+| `locals`     | no       | Path to a locals query, for scope-aware highlighting.                         |
+| `aliases`    | no       | Code-fence tags this grammar handles; defaults to the table key.              |
+
+Paths are relative to the book root.
 
 ### Getting a parser shared object and queries
 
@@ -96,7 +95,9 @@ cd tree-sitter-nix
 tree-sitter build --output libtree-sitter-nix.so
 ```
 
-The highlights query is the grammar's `queries/highlights.scm`.
+The highlights query is the grammar's `queries/highlights.scm`. An existing
+[nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) install is
+also a convenient source of both compiled parsers and queries.
 
 ## Capture names and CSS classes
 
@@ -106,13 +107,15 @@ query defines. A capture becomes a class with the `ts-` prefix and dots turned
 into hyphens, and every prefix is emitted so broad rules cascade and specific
 ones override:
 
-| capture             | classes                              |
-| ------------------- | ------------------------------------ |
-| `keyword`           | `ts-keyword`                         |
-| `keyword.operator`  | `ts-keyword ts-keyword-operator`     |
-| `string.regexp`     | `ts-string ts-string-regexp`         |
+| capture            | classes                          |
+| ------------------ | -------------------------------- |
+| `keyword`          | `ts-keyword`                     |
+| `keyword.operator` | `ts-keyword ts-keyword-operator` |
+| `string.regexp`    | `ts-string ts-string-regexp`     |
 
-The bundled [`assets/treesitter.css`](assets/treesitter.css) styles the
+Captures whose name starts with `_` are treated as internal and not styled.
+
+The default stylesheet (`mdbook-treesitter css`) styles the
 [standard tree-sitter / nvim-treesitter capture names](https://github.com/nvim-treesitter/nvim-treesitter/blob/main/CONTRIBUTING.md#highlights)
 (`@comment`, `@keyword`, `@string`, `@function`, `@type`, `@variable`, …), so a
 grammar whose query uses those names is styled out of the box. Add rules for any

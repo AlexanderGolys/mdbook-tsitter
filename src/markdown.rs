@@ -60,8 +60,8 @@ struct OpenBlock {
 }
 
 /// The first language token of a fence info string. mdBook/rustdoc allow
-/// comma- or space-separated annotations (e.g. `m2,no_run`), so the grammar tag
-/// is everything up to the first separator.
+/// comma- or space-separated annotations (e.g. `rust,no_run`), so the grammar
+/// tag is everything up to the first separator.
 fn fence_language(info: &str) -> &str {
     info.split(|c: char| c.is_whitespace() || c == ',')
         .find(|token| !token.is_empty())

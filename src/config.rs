@@ -24,13 +24,8 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    /// User-added languages, keyed by language name.
+    /// The languages to highlight, keyed by language name.
     pub languages: HashMap<String, LanguageConfig>,
-    /// Whether grammars compiled into the binary (e.g. the bundled Macaulay2)
-    /// are offered. Set `bundled = false` in `book.toml` to ignore them and
-    /// highlight only the languages configured here. A binary built with
-    /// `--no-default-features` carries no bundled grammars regardless.
-    pub bundled: bool,
     /// Whether languages embedded in a block (via a grammar's injections query)
     /// are highlighted with their own grammar. Only languages already
     /// configured here are ever used — injection never loads a new grammar — so
@@ -44,7 +39,6 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             languages: HashMap::new(),
-            bundled: true,
             inject: true,
         }
     }
@@ -53,8 +47,7 @@ impl Default for Config {
 /// One dynamically loaded grammar.
 #[derive(Debug, Deserialize)]
 pub struct LanguageConfig {
-    /// Path to the compiled parser shared object. Required for languages not
-    /// bundled into the binary.
+    /// Path to the compiled parser shared object.
     pub library: Option<String>,
     /// The parser's exported constructor symbol; defaults to
     /// `tree_sitter_<name>` (with `-` mapped to `_`).

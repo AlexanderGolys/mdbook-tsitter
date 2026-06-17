@@ -18,6 +18,10 @@ struct Cli {
     command: Option<Command>,
 }
 
+/// The default class-based stylesheet, embedded so it can be emitted without
+/// the source checkout.
+const DEFAULT_CSS: &str = include_str!("../assets/treesitter.css");
+
 #[derive(Subcommand)]
 enum Command {
     /// Answer mdBook's renderer-support query: exit 0 if supported, 1 if not.
@@ -25,6 +29,10 @@ enum Command {
         /// The renderer mdBook is about to run.
         renderer: String,
     },
+    /// Print the default theme to stdout, e.g.
+    /// `mdbook-treesitter css > theme/treesitter.css`, then reference it from
+    /// `[output.html] additional-css`.
+    Css,
 }
 
 fn main() -> Result<()> {
@@ -37,6 +45,10 @@ fn main() -> Result<()> {
                 .supports_renderer(&renderer)
                 .context("checking renderer support")?;
             process::exit(if supported { 0 } else { 1 });
+        }
+        Some(Command::Css) => {
+            print!("{DEFAULT_CSS}");
+            Ok(())
         }
         None => preprocess(&preprocessor),
     }
