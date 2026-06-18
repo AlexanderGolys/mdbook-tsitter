@@ -4,68 +4,181 @@
  * The preprocessor emits one `<span class="ts-…">` per tree-sitter capture,
  * using the capture name as the class (dots become hyphens, and each prefix is
  * added too: `keyword.operator` -> `class="ts-keyword ts-keyword-operator"`).
- * That means broad rules cascade and specific ones override. The selectors
- * below follow the standard tree-sitter / nvim-treesitter capture names, so a
- * grammar whose query uses those names is styled out of the box; add rules for
- * any extra captures your grammar defines.
+ * Each block is wrapped in `<code class="language-<fence>">`, so colours can be
+ * scoped per language (see "Per-language overrides" at the bottom).
  *
- * Colours are deliberately mid-tone so they read on every bundled mdBook theme
- * (light, rust, coal, navy, ayu). Override or replace this file to taste.
+ * Colours are organised in three layers so they stay both theme-adaptive and
+ * per-language tunable:
+ *
+ *   1. Hue palette  — `--ts-red`, `--ts-blue`, … redefined per mdBook theme with
+ *      that theme's own syntax colours (mdBook sets the theme as a class on
+ *      <html>: `light`, `rust`, `coal`, `navy`, `ayu`). The hues come straight
+ *      from mdBook's bundled highlight.js stylesheets — Tomorrow for the light
+ *      themes, Tomorrow Night for coal/navy, Ayu for ayu — so highlighting
+ *      matches the rest of the page.
+ *   2. Semantic map — `--ts-keyword: var(--ts-purple)`, … assigned once; because
+ *      it points at hue variables, every theme gets its own colour for free.
+ *   3. Capture rules — `.ts-keyword { color: var(--ts-keyword) }`, and per-
+ *      language overrides that re-point a capture at a different hue.
+ *
+ * To retheme: override a hue (`--ts-blue`), a semantic (`--ts-keyword`), or a
+ * rule. A custom mdBook colour scheme falls back to the light hue palette.
  */
+
+/* ---- Layer 1: hue palette, per mdBook theme ---------------------------- */
+
+/* Light themes (light, rust) — Tomorrow palette; also the default. */
+:root {
+  --ts-red:    #d70025;
+  --ts-orange: #b21e00;
+  --ts-yellow: #946800;
+  --ts-green:  #008200;
+  --ts-cyan:   #3e999f;
+  --ts-blue:   #0030f2;
+  --ts-purple: #9d00ec;
+  --ts-gray:   #575757;
+}
+
+/* Dark themes (coal, navy) — Tomorrow Night palette. */
+.coal,
+.navy {
+  --ts-red:    #cc6666;
+  --ts-orange: #de935f;
+  --ts-yellow: #f0c674;
+  --ts-green:  #b5bd68;
+  --ts-cyan:   #8abeb7;
+  --ts-blue:   #81a2be;
+  --ts-purple: #b294bb;
+  --ts-gray:   #969896;
+}
+
+/* Ayu — its own palette. Ayu has no purple, so keywords borrow its orange. */
+.ayu {
+  --ts-red:    #d96c75;
+  --ts-orange: #ff7733;
+  --ts-yellow: #ffee99;
+  --ts-green:  #b8cc52;
+  --ts-cyan:   #95e6cb;
+  --ts-blue:   #36a3d9;
+  --ts-purple: #ff7733;
+  --ts-gray:   #5c6773;
+}
+
+/* ---- Layer 2: semantic map (hue per role; theme-independent) ------------ */
+:root {
+  --ts-comment:   var(--ts-gray);
+  --ts-keyword:   var(--ts-purple);
+  --ts-string:    var(--ts-green);
+  --ts-escape:    var(--ts-cyan);
+  --ts-number:    var(--ts-orange);
+  --ts-function:  var(--ts-blue);
+  --ts-declaration: var(--ts-cyan);
+  --ts-type:      var(--ts-yellow);
+  --ts-special:   var(--ts-red);
+  --ts-namespace: var(--ts-purple);
+  --ts-attribute: var(--ts-yellow);
+  --ts-heading:   var(--ts-blue);
+  --ts-link:      var(--ts-cyan);
+}
+
+/* ---- Layer 3: capture rules -------------------------------------------- */
 
 pre.treesitter > code {
   /* Inherit mdBook's code background and base text colour. */
   color: inherit;
 }
 
-/* Comments and disabled-looking text. */
-.ts-comment { color: #8a8a8a; font-style: italic; }
+/* Comments. */
+.ts-comment { color: var(--ts-comment); }
 
 /* Literals. */
-.ts-string { color: #98971a; }
+.ts-string,
+.ts-character { color: var(--ts-string); }
 .ts-string-special,
-.ts-string-escape { color: #689d6a; }
-.ts-string-regexp { color: #b8bb26; }
-.ts-character { color: #98971a; }
+.ts-string-escape,
+.ts-string-regexp,
+.ts-character-special { color: var(--ts-escape); }
 .ts-number,
-.ts-float { color: #d65d0e; }
-.ts-boolean { color: #d65d0e; }
-.ts-constant { color: #d79921; }
-.ts-constant-builtin { color: #d79921; font-weight: 600; }
+.ts-float,
+.ts-boolean,
+.ts-constant { color: var(--ts-number); }
 
 /* Keywords and operators. */
-.ts-keyword { color: #cc241d; font-weight: 600; }
-.ts-keyword-operator { color: #cc241d; font-weight: normal; }
-.ts-keyword-return,
-.ts-keyword-exception { color: #cc241d; }
+.ts-keyword { color: var(--ts-keyword); }
+.ts-keyword-operator { color: var(--ts-keyword); }
+.ts-keyword-directive { color: var(--ts-keyword); }
 .ts-conditional,
-.ts-repeat { color: #cc241d; }
-.ts-operator { color: #98863c; }
+.ts-repeat { color: var(--ts-keyword); }
+/* Operators stay the base text colour — they should not compete with names. */
+.ts-operator { color: inherit; }
 
 /* Identifiers. */
+/* Definitions take their own hue so a call-heavy expression doesn't read as one
+   solid block of the function colour; calls keep the function hue. (Call spans
+   carry both `ts-function` and `ts-function-call`, so the call rule below wins.) */
 .ts-function,
-.ts-function-call { color: #458588; }
-.ts-function-builtin { color: #458588; font-style: italic; }
-.ts-method,
-.ts-method-call { color: #458588; }
-.ts-constructor { color: #689d6a; }
+.ts-method { color: var(--ts-declaration); }
+.ts-function-call,
+.ts-method-call { color: var(--ts-function); }
+.ts-constructor { color: var(--ts-type); }
 .ts-variable { color: inherit; }
-.ts-variable-builtin { color: #cc241d; font-style: italic; }
-.ts-variable-parameter { color: #b16286; }
+.ts-variable-builtin { color: var(--ts-special); }
+.ts-variable-parameter { color: var(--ts-special); }
 .ts-property,
-.ts-field { color: #458588; }
+.ts-field { color: var(--ts-function); }
 .ts-type,
-.ts-type-builtin { color: #d79921; }
+.ts-type-builtin { color: var(--ts-type); }
 .ts-namespace,
-.ts-module { color: #b16286; }
+.ts-module { color: var(--ts-namespace); }
 
-/* Punctuation. */
+/* Punctuation reads as the surrounding text, just dimmed — it should never
+   compete with the tokens it brackets. */
 .ts-punctuation,
 .ts-punctuation-bracket,
-.ts-punctuation-delimiter { color: inherit; opacity: 0.8; }
-.ts-punctuation-special { color: #b16286; }
+.ts-punctuation-delimiter { color: inherit; opacity: 0.75; }
+.ts-punctuation-special { color: var(--ts-special); opacity: 1; }
 
-/* Markup-ish captures used by some grammars. */
-.ts-tag { color: #cc241d; }
-.ts-attribute { color: #b16286; }
-.ts-label { color: #b16286; }
+/* Markup captures (Markdown and similar prose grammars). */
+.ts-markup-heading { color: var(--ts-heading); }
+.ts-markup-strikethrough { text-decoration: line-through; }
+.ts-markup-link,
+.ts-markup-link-url { color: var(--ts-link); text-decoration: underline; }
+.ts-markup-link-label { color: var(--ts-special); }
+.ts-markup-quote { color: var(--ts-comment); }
+.ts-markup-list { color: var(--ts-special); }
+.ts-markup-raw { color: var(--ts-string); }
+/* A fenced block carries `markup.raw.block` over its whole span; leave it
+   uncoloured so an injected language's own highlighting shows through, and an
+   unconfigured one simply degrades to plain text. */
+.ts-markup-raw-block { color: inherit; }
+
+/* Tokens a grammar explicitly flags as errors (e.g. M2's `error`/`stderr`). */
+.ts-error { color: var(--ts-special); }
+
+/* Other markup-ish captures used by some grammars. */
+.ts-tag { color: var(--ts-special); }
+.ts-attribute { color: var(--ts-attribute); }
+.ts-label { color: var(--ts-namespace); }
+
+/* ---- Per-language overrides -------------------------------------------- */
+/*
+ * Each block is `<code class="language-<fence>">`, so a `code.language-<x>`
+ * selector retints only that language. Point captures at hue variables
+ * (`var(--ts-blue)`) rather than raw colours so the override still adapts to
+ * every theme. Copy a block below to tune another language.
+ */
+
+/* Rust — macros read as keywords (rust-analyzer convention); lifetimes stand
+   out as their own colour rather than sharing the namespace hue. */
+code.language-rust .ts-function-macro { color: var(--ts-keyword); }
+code.language-rust .ts-label { color: var(--ts-special); }
+
+/* Haskell — operators are legible in their own hue since Haskell is
+   operator-dense. */
+code.language-haskell .ts-operator { color: var(--ts-cyan); opacity: 0.9; }
+
+/* Macaulay2 — operators (`:=`, `=>`, `->`, `_`, …) carry real meaning, so give
+   them the declaration hue (shared with definitions) rather than leaving them
+   the bare text colour. That hue keeps them distinct from the already-blue
+   calls, fields, and index numbers that fill an M2 expression. */
+code.language-m2 .ts-operator { color: var(--ts-declaration); }

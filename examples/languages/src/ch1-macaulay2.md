@@ -12,6 +12,6 @@ A block with a syntax error still highlights what it can — tree-sitter recover
 from the error rather than failing the build:
 
 ```m2
-f = method(
+f = method()
 R = QQ[x
 ```
