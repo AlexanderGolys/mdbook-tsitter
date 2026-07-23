@@ -37,4 +37,5 @@ highlights = "queries/markdown/highlights.scm"
 injections = "queries/markdown/injections.scm"
 
 [output.html]
+site-url = "/mdbook-tsitter/"
 additional-css = ["theme/treesitter.css"]

@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cargo install mdbook --version 0.5.2 --locked && cargo build --release && PATH=\"$HOME/.cargo/bin:$PATH\" mdbook build examples/languages",
+  "outputDirectory": "examples/languages/book"
+}
