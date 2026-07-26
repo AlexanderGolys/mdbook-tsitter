@@ -13,6 +13,8 @@ example, and an integration test across several grammars. Its chapters are:
     Markdown.
   - *Injection* — a Markdown block with embedded `lua` (configured, so it is
     sub-highlighted) and `c` (not configured, so it degrades to plain text).
+  - *tree-sitter vs highlight.js* — the same Macaulay2, Rust, Lua, Haskell and
+    Markdown samples rendered side by side by both highlighters.
 - **Contributing** — the root [`CONTRIBUTING.md`](../../CONTRIBUTING.md), also
   via `{{#include}}`.
 

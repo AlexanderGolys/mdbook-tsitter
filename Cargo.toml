@@ -1,10 +1,11 @@
 [package]
 name = "mdbook-tsitter"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 description = "An mdBook preprocessor that highlights fenced code blocks with tree-sitter, for any language with a tree-sitter grammar."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/AlexanderGolys/mdbook-tsitter"
+homepage = "https://spectralflux.dev/mdbook-tsitter"
 keywords = ["mdbook", "tree-sitter", "syntax-highlighting", "preprocessor"]
 categories = ["command-line-utilities", "text-processing"]
 readme = "README.md"
