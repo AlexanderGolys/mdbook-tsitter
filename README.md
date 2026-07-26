@@ -12,6 +12,8 @@
   <a href="https://spectralflux.dev/mdbook-tsitter"><strong>Open the live example book</strong></a>
 </p>
 
+<!-- ANCHOR: book-content -->
+
 `mdbook-tsitter` is an mdBook preprocessor that parses fenced code blocks with
 [tree-sitter](https://tree-sitter.github.io/) and renders the resulting captures
 as themeable HTML. It is grammar-agnostic: supply a compiled parser and the
@@ -250,3 +252,5 @@ assets from local grammar installations.
 
 Licensed under either of [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE) at
 your option.
+
+<!-- ANCHOR_END: book-content -->
