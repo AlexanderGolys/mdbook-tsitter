@@ -10,18 +10,17 @@ example, and an integration test across several grammars. Its chapters are:
   the code:
   - *Macaulay2* — a well-formed block and one with a syntax error (which still
     highlights, since tree-sitter recovers).
-  - *Five languages* — one block each in Macaulay2, Rust, Lua, Haskell and
-    Markdown.
   - *Injection* — a Markdown block with embedded `lua` (configured, so it is
-    sub-highlighted) and `c` (not configured, so it degrades to plain text).
-  - *tree-sitter vs highlight.js* — the same Macaulay2, Rust, Lua, Haskell and
-    Markdown samples rendered side by side by both highlighters.
+    sub-highlighted) and `toml` (not configured, so it degrades to plain text).
+  - *Highlighting, side by side* — substantial, identical samples in Rust,
+    Python, TypeScript, JavaScript, Go, Java, C, C++, Bash, PHP, Lua and Haskell
+    rendered in two wide columns.
 - **Contributing** — the root [`CONTRIBUTING.md`](../../CONTRIBUTING.md), also
   via `{{#include}}`.
 
-Grammars are external (compiled parsers + third-party queries), so they are not
-committed. [`setup.sh`](setup.sh) stages them into `parsers/` and `queries/`
-(both gitignored), copying from a local nvim-treesitter install by default.
+Grammars are external compiled parsers plus third-party queries. The deployed
+copies are committed so cloud builds are reproducible.
+[`setup.sh`](setup.sh) refreshes them from a local nvim-treesitter install.
 
 ```sh
 ./setup.sh          # stage parsers + queries (override sources via env vars)

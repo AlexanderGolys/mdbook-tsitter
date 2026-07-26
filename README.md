@@ -39,10 +39,10 @@ Rust and Lua to a language of your own.
 - **Build-time rendering.** Highlighted HTML is generated with the book; the
   reader does not need a tree-sitter runtime.
 
-The [example book](https://spectralflux.dev/mdbook-tsitter) demonstrates
-Macaulay2, Rust, Lua, Haskell, Markdown injections, long source files, and
-side-by-side renderer examples. Its complete source lives in
-[`examples/languages`](examples/languages).
+The [example book](https://spectralflux.dev/mdbook-tsitter) includes a custom
+Macaulay2 grammar, Markdown injections, and substantial side-by-side examples
+in Rust, Python, TypeScript, JavaScript, Go, Java, C, C++, Bash, PHP, Lua, and
+Haskell. Its complete source lives in [`examples/languages`](examples/languages).
 
 ## Installation
 

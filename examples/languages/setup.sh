@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Stage the parser shared objects and highlights queries this example needs.
 #
-# Grammars are external (compiled parsers + queries), so they are not committed.
-# Rust/Lua/Markdown/Haskell are copied from a local nvim-treesitter install.
+# Grammars are external compiled parsers + queries. The copies used by the
+# deployed book are committed for reproducible cloud builds; this script
+# refreshes them from a local nvim-treesitter install.
+# Most languages are copied directly from that install.
 # Macaulay2 is built from its grammar repo so the parser and query stay
 # version-consistent (the query uses node patterns the matching parser provides).
-# Everything this writes (parsers/, queries/) is gitignored.
-#
 #   NVIM_TS_DIR   nvim-treesitter dir (default: ~/.local/share/nvim/lazy/nvim-treesitter)
 #   M2_GRAMMAR    tree-sitter-macaulay2 repo (default: ~/m2/tree-sitter-macaulay2)
 set -euo pipefail
@@ -24,15 +24,45 @@ parser() { # <parser-file-stem>
   cp "$src" "$here/parsers/$1.so"
 }
 
-# Copy a highlights query out of the nvim-treesitter install.
+# Copy a highlights query out of the nvim-treesitter install. nvim resolves
+# `; inherits:` modelines itself; mdbook-tsitter receives one query file, so
+# flatten the small inheritance chains used by these example languages.
 query() { # <lang>
-  local src="$ts/queries/$1/highlights.scm"
-  [[ -f "$src" ]] || { echo "missing query: $src" >&2; exit 1; }
-  mkdir -p "$here/queries/$1"
-  cp "$src" "$here/queries/$1/highlights.scm"
+  local lang="$1"
+  local parts=()
+  case "$lang" in
+    cpp) parts=(c) ;;
+    javascript) parts=(ecma jsx) ;;
+    php) parts=(php_only) ;;
+    typescript) parts=(ecma) ;;
+  esac
+  parts+=("$lang")
+
+  mkdir -p "$here/queries/$lang"
+  for part in "${parts[@]}"; do
+    local src="$ts/queries/$part/highlights.scm"
+    [[ -f "$src" ]] || {
+      echo "missing query: $src" >&2
+      exit 1
+    }
+  done
+
+  {
+    for index in "${!parts[@]}"; do
+      local part="${parts[$index]}"
+      sed '/^; inherits:/d' "$ts/queries/$part/highlights.scm"
+      if ((index + 1 < ${#parts[@]})); then
+        printf '\n'
+      fi
+    done
+  } > "$here/queries/$lang/highlights.scm"
+  perl -0pi -e 's/\n+\z/\n/' \
+    "$here/queries/$lang/highlights.scm"
 }
 
-for lang in rust lua markdown haskell; do
+for lang in \
+  bash c cpp go haskell java javascript lua markdown php python rust typescript
+do
   parser "$lang"
   query "$lang"
 done

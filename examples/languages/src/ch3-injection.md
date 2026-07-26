@@ -2,8 +2,9 @@
 
 The Markdown grammar's injections query highlights each fenced block inside a
 Markdown block with the grammar named by its info string. `lua` is configured,
-so it is sub-highlighted; `c` is **not** configured, so it is left as plain text
-— an unregistered injected language degrades gracefully instead of erroring.
+so it is sub-highlighted; `toml` is **not** configured, so it is left as plain
+text — an unregistered injected language degrades gracefully instead of
+erroring.
 
 (The outer block uses four backticks so the inner three-backtick fences are
 content, not terminators.)
@@ -16,7 +17,8 @@ local greeting = "hello"
 print(greeting)
 ```
 
-```c
-int main(void) { return 0; }
+```toml
+[package]
+name = "plain-text-fallback"
 ```
 ````

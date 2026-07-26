@@ -3,7 +3,8 @@ title = "mdbook-tsitter"
 src = "src"
 
 # Every grammar is loaded dynamically from a compiled parser + highlights query.
-# Run ./setup.sh first to stage parsers/ and queries/ (both gitignored).
+# The deployed copies in parsers/ and queries/ are committed; run ./setup.sh to
+# refresh them from local grammar installations.
 #
 # `after = ["links"]` runs this after mdBook's built-in include preprocessor, so
 # any configured-language block inside content pulled in via {{#include}} (the
@@ -20,6 +21,46 @@ aliases = ["m2", "macaulay2"]
 [preprocessor.tsitter.languages.rust]
 library = "parsers/rust.so"
 highlights = "queries/rust/highlights.scm"
+
+[preprocessor.tsitter.languages.python]
+library = "parsers/python.so"
+highlights = "queries/python/highlights.scm"
+
+[preprocessor.tsitter.languages.typescript]
+library = "parsers/typescript.so"
+highlights = "queries/typescript/highlights.scm"
+aliases = ["typescript", "ts"]
+
+[preprocessor.tsitter.languages.javascript]
+library = "parsers/javascript.so"
+highlights = "queries/javascript/highlights.scm"
+aliases = ["javascript", "js"]
+
+[preprocessor.tsitter.languages.go]
+library = "parsers/go.so"
+highlights = "queries/go/highlights.scm"
+
+[preprocessor.tsitter.languages.java]
+library = "parsers/java.so"
+highlights = "queries/java/highlights.scm"
+
+[preprocessor.tsitter.languages.c]
+library = "parsers/c.so"
+highlights = "queries/c/highlights.scm"
+
+[preprocessor.tsitter.languages.cpp]
+library = "parsers/cpp.so"
+highlights = "queries/cpp/highlights.scm"
+aliases = ["cpp", "c++"]
+
+[preprocessor.tsitter.languages.bash]
+library = "parsers/bash.so"
+highlights = "queries/bash/highlights.scm"
+aliases = ["bash", "sh", "shell"]
+
+[preprocessor.tsitter.languages.php]
+library = "parsers/php.so"
+highlights = "queries/php/highlights.scm"
 
 [preprocessor.tsitter.languages.lua]
 library = "parsers/lua.so"

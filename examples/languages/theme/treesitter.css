@@ -88,26 +88,36 @@ pre.treesitter > code {
   color: inherit;
 }
 
-/* The comparison chapter renders identical tree-sitter and highlight.js
-   blocks as a pair. Keep both panes equal-width and equal-height on roomy
-   screens, then stack them before either sample becomes cramped. */
+/* The comparison chapter renders identical source as a pair. Its grid widens
+   beyond mdBook's prose column on large screens, where real-world code benefits
+   from the extra room, then returns to the normal flow on smaller screens. */
+.highlight-comparison-key,
 .highlight-comparison {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  margin: 0.75rem 0 2rem;
+  width: min(1100px, calc(100vw - 380px));
+  margin-left: 50%;
+  column-gap: 2.25rem;
+  transform: translateX(-50%);
+}
+
+.highlight-comparison-key {
+  margin-top: 1.5rem;
+  margin-bottom: 2.5rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--table-border-color);
+  font-size: 0.9em;
+}
+
+.highlight-comparison {
+  margin-top: 0.75rem;
+  margin-bottom: 3.25rem;
 }
 
 .highlight-comparison-pane {
   display: flex;
   min-width: 0;
   flex-direction: column;
-}
-
-.highlight-comparison-pane > p {
-  margin: 0 0 0.4rem;
-  color: var(--fg);
-  font-size: 0.9em;
 }
 
 .highlight-comparison-pane > pre {
@@ -117,9 +127,27 @@ pre.treesitter > code {
   margin: 0;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 1080px) {
+  .highlight-comparison-key,
+  .highlight-comparison {
+    width: 100%;
+    margin-left: 0;
+    transform: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .highlight-comparison-key,
   .highlight-comparison {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .highlight-comparison-key {
+    display: none;
+  }
+
+  .highlight-comparison {
+    row-gap: 1.5rem;
   }
 }
 
