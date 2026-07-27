@@ -73,8 +73,7 @@ highlights = "queries/haskell/highlights.scm"
 [preprocessor.tsitter.languages.markdown]
 library = "parsers/markdown.so"
 highlights = "queries/markdown/highlights.scm"
-# Injections let a Markdown block sub-highlight the languages of its fenced
-# code blocks (see chapter 3).
+# Injections let Markdown blocks sub-highlight configured fenced languages.
 injections = "queries/markdown/injections.scm"
 
 [output.html]

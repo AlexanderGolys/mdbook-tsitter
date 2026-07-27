@@ -88,7 +88,7 @@ pre.treesitter > code {
   color: inherit;
 }
 
-/* The comparison chapter renders identical source as a pair. Its grid widens
+/* The comparison chapters render identical source as a pair. Their grids widen
    beyond mdBook's prose column on large screens, where real-world code benefits
    from the extra room, then returns to the normal flow on smaller screens. */
 .highlight-comparison-key,

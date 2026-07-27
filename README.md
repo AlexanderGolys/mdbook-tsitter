@@ -40,9 +40,9 @@ Rust and Lua to a language of your own.
   reader does not need a tree-sitter runtime.
 
 The [example book](https://spectralflux.dev/mdbook-tsitter) includes a custom
-Macaulay2 grammar, Markdown injections, and substantial side-by-side examples
-in Rust, Python, TypeScript, JavaScript, Go, Java, C, C++, Bash, PHP, Lua, and
-Haskell. Its complete source lives in [`examples/languages`](examples/languages).
+Macaulay2 grammar and substantial side-by-side examples in Rust, Python,
+TypeScript, JavaScript, Go, Java, C, C++, Bash, PHP, Lua, and Haskell. Its
+complete source lives in [`examples/languages`](examples/languages).
 
 ## Installation
 
