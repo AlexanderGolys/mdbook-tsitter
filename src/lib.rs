@@ -8,6 +8,7 @@
 pub mod config;
 pub mod grammar;
 pub mod markdown;
+pub mod native;
 pub mod predicates;
 pub mod render;
 
@@ -17,6 +18,7 @@ use mdbook_preprocessor::{Preprocessor, PreprocessorContext};
 
 use crate::config::Config;
 use crate::grammar::Registry;
+use crate::native::NativeFeatures;
 
 /// The preprocessor entry point registered with mdBook as `tsitter`.
 pub struct TreeSitterPreprocessor;
@@ -29,10 +31,11 @@ impl Preprocessor for TreeSitterPreprocessor {
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book> {
         let config = Config::from_context(ctx)?;
         let registry = Registry::build(&ctx.root, &config)?;
+        let native = NativeFeatures::from_book(&ctx.config)?;
 
         book.for_each_mut(|item| {
             if let BookItem::Chapter(chapter) = item {
-                chapter.content = markdown::rewrite(&chapter.content, &registry);
+                chapter.content = markdown::rewrite(&chapter.content, &registry, &native);
             }
         });
 

@@ -76,6 +76,16 @@ highlights = "queries/markdown/highlights.scm"
 # Injections let Markdown blocks sub-highlight configured fenced languages.
 injections = "queries/markdown/injections.scm"
 
+[rust]
+edition = "2021"
+
 [output.html]
 site-url = "/mdbook-tsitter/"
 additional-css = ["theme/treesitter.css"]
+
+# Playground features kept on highlighted blocks (see the Interactive chapter).
+[output.html.playground]
+editable = true
+
+[output.html.code.hidelines]
+python = "~~"

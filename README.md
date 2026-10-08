@@ -143,18 +143,36 @@ Injection queries can select another configured grammar using standard
 same capture-class table during a build, so embedded and host languages use the
 same theme consistently.
 
+### Rust Playground and hidden lines
+
+Highlighted blocks keep mdBook's code-block features. Rust blocks stay
+runnable in the Rust Playground, with the book's `[rust] edition`, the implicit
+`fn main` wrapper, and annotations such as `ignore`, `noplayground`,
+`mdbook-runnable`, or `edition2021` handled as mdBook handles them. Hidden
+lines (`# ` in Rust, or a prefix from `hidelines=` or
+`[output.html.code.hidelines]`) are collapsed behind mdBook's toggle:
+
+````markdown
+```rust
+# use std::collections::HashMap;
+let mut scores = HashMap::new();
+scores.insert("tree-sitter", 1);
+```
+````
+
+Editable playgrounds (`editable` with `[output.html.playground] editable =
+true`) are replaced by mdBook's in-page editor, so they are always left to
+mdBook.
+
 ### Leaving a block to mdBook
 
 Processing a block replaces its Markdown with highlighted HTML. Add the
-`notreesitter` annotation when a block should retain mdBook's own handling,
-including Rust Playground buttons, hidden lines, and `ignore` or `no_run`
-annotations:
+`notreesitter` annotation when a block should keep mdBook's highlight.js
+highlighting instead:
 
 ````markdown
 ```rust,notreesitter
-# fn main() {
-let runnable = "mdBook keeps control of this block";
-# }
+let highlighted = "by mdBook";
 ```
 ````
 
@@ -229,6 +247,14 @@ the chapter as ready-made HTML:
 The original language class remains available for per-language styles, while
 `no-highlight` marks the HTML as already processed.
 
+mdBook adds its own code-block features (Rust Playground markup, the implicit
+`fn main`, hidden lines) only to plain-text blocks, so the preprocessor applies
+the same rules before highlighting. A runnable Rust block, for example, becomes:
+
+```html
+<pre class="treesitter playground"><code class="no-highlight language-rust edition2021">…spans…</code></pre>
+```
+
 ## Development
 
 Run the Rust test suite:
@@ -236,6 +262,11 @@ Run the Rust test suite:
 ```sh
 cargo test
 ```
+
+With `mdbook` on `PATH` (or in `$MDBOOK`), the suite also builds test books
+with the real mdBook and checks that every highlighted block has the same
+structure as mdBook's own rendering of it: classes, hidden lines, and the text
+the Run and Copy buttons use.
 
 Build the multi-language example book:
 

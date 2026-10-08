@@ -1,17 +1,19 @@
 //! Finding fenced code blocks in a chapter and replacing the ones we can
 //! highlight with pre-rendered HTML. We locate blocks by byte offset with
 //! pulldown-cmark (the same parser mdBook uses) and splice raw HTML in place,
-//! which mdBook then passes through untouched.
+//! which mdBook then passes through untouched. mdBook's own block decorations
+//! (playground, hidden lines) are reproduced by [`crate::native`].
 
 use std::ops::Range;
 
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 
 use crate::grammar::Registry;
+use crate::native::NativeFeatures;
 
 /// Highlight every fenced code block whose info string names a known grammar.
 /// Blocks in other languages (or with no language) are left exactly as written.
-pub fn rewrite(content: &str, registry: &Registry) -> String {
+pub fn rewrite(content: &str, registry: &Registry, native: &NativeFeatures) -> String {
     let mut replacements: Vec<(Range<usize>, String)> = Vec::new();
     let mut open: Option<OpenBlock> = None;
 
@@ -22,8 +24,7 @@ pub fn rewrite(content: &str, registry: &Registry) -> String {
                 open = Some(OpenBlock {
                     start: range.start,
                     top_level: at_line_start(content, range.start),
-                    skipped: fence_tokens(&info).any(|token| token == SKIP_TAG),
-                    lang: fence_language(&info).to_string(),
+                    info: info.to_string(),
                     code: String::new(),
                 });
             }
@@ -34,7 +35,7 @@ pub fn rewrite(content: &str, registry: &Registry) -> String {
             }
             Event::End(TagEnd::CodeBlock) => {
                 if let Some(block) = open.take() {
-                    if let Some(html) = render_block(&block, registry) {
+                    if let Some(html) = render_block(&block, registry, native) {
                         replacements.push((block.start..range.end, html));
                     }
                 }
@@ -47,9 +48,14 @@ pub fn rewrite(content: &str, registry: &Registry) -> String {
 }
 
 /// Fence-info tag that opts a single block out of tree-sitter highlighting,
-/// leaving it to mdBook (so its highlight.js and Rust playground/run/hidden-line
-/// widgets still apply). E.g. ```` ```rust,notreesitter ````.
+/// leaving it to mdBook and its highlight.js. E.g. ```` ```rust,notreesitter ````.
 const SKIP_TAG: &str = "notreesitter";
+
+/// Class marking a `<pre>` as rendered by this preprocessor, for styling.
+const PRE_CLASS: &str = "treesitter";
+
+/// Class that tells highlight.js a block is already highlighted.
+const NO_HIGHLIGHT_CLASS: &str = "no-highlight";
 
 /// A fenced block being accumulated between its start and end events.
 struct OpenBlock {
@@ -61,10 +67,20 @@ struct OpenBlock {
     /// mdBook, since pulldown-cmark strips their prefixes from the text and the
     /// splice would otherwise corrupt the surrounding structure.
     top_level: bool,
-    /// Whether the fence carries the [`SKIP_TAG`] opt-out.
-    skipped: bool,
-    lang: String,
+    /// The fence info string: the language tag followed by annotations.
+    info: String,
     code: String,
+}
+
+impl OpenBlock {
+    fn lang(&self) -> &str {
+        fence_tokens(&self.info).next().unwrap_or_default()
+    }
+
+    /// The fence tokens after the language tag, e.g. `ignore` in `rust,ignore`.
+    fn annotations(&self) -> Vec<&str> {
+        fence_tokens(&self.info).skip(1).collect()
+    }
 }
 
 /// The whitespace/comma-separated tokens of a fence info string, e.g.
@@ -74,36 +90,41 @@ fn fence_tokens(info: &str) -> impl Iterator<Item = &str> {
         .filter(|token| !token.is_empty())
 }
 
-/// The first language token of a fence info string. mdBook/rustdoc allow
-/// comma- or space-separated annotations (e.g. `rust,no_run`), so the grammar
-/// tag is everything up to the first separator.
-fn fence_language(info: &str) -> &str {
-    fence_tokens(info).next().unwrap_or_default()
-}
-
 /// Whether `offset` is at the start of a line (column 0) in `content`.
 fn at_line_start(content: &str, offset: usize) -> bool {
     offset == 0 || content.as_bytes()[offset - 1] == b'\n'
 }
 
 /// Render one block to a standalone HTML element, or `None` to leave it as-is.
-fn render_block(block: &OpenBlock, registry: &Registry) -> Option<String> {
-    if block.skipped || !block.top_level {
+fn render_block(block: &OpenBlock, registry: &Registry, native: &NativeFeatures) -> Option<String> {
+    let lang = block.lang();
+    let annotations = block.annotations();
+    if !block.top_level || annotations.contains(&SKIP_TAG) {
         return None;
     }
-    let highlighted = match registry.highlight(&block.lang, &block.code)? {
-        Ok(html) => html,
+    let prepared = native.prepare(lang, &annotations, &block.code)?;
+    let highlighted = match registry.highlight(lang, &prepared.source)? {
+        Ok(html) => prepared.decorate(&html),
         Err(error) => {
-            eprintln!("mdbook-tsitter: skipping `{}` block: {error:#}", block.lang);
+            eprintln!("mdbook-tsitter: skipping `{lang}` block: {error:#}");
             return None;
         }
     };
+    let pre_class = class_list([PRE_CLASS.to_string()], prepared.pre_classes);
     // `no-highlight` keeps mdBook's highlight.js from re-processing the spans we
     // already produced; the language class is preserved for theming hooks.
+    let code_class = class_list(
+        [NO_HIGHLIGHT_CLASS.to_string(), format!("language-{lang}")],
+        prepared.code_classes,
+    );
     Some(format!(
-        "\n<pre class=\"treesitter\"><code class=\"no-highlight language-{lang}\">{highlighted}</code></pre>\n",
-        lang = block.lang,
+        "\n<pre class=\"{pre_class}\"><code class=\"{code_class}\">{highlighted}</code></pre>\n",
     ))
+}
+
+/// Join our own classes and mdBook's native ones into a `class` attribute value.
+fn class_list<const N: usize>(own: [String; N], native: Vec<String>) -> String {
+    own.into_iter().chain(native).collect::<Vec<_>>().join(" ")
 }
 
 /// Apply replacements to `content`, working back-to-front so earlier byte

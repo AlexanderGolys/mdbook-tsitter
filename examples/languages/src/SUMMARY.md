@@ -18,6 +18,10 @@
 - [Go](./languages/go.md)
 - [JavaScript](./languages/javascript.md)
 
+# Interactive
+
+- [Interactive blocks](./interactive.md)
+
 # Project
 
 - [Contributing](./contributing.md)

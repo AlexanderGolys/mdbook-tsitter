@@ -10,6 +10,8 @@ example, and an integration test across several grammars. Its chapters are:
   tree-sitter example; Rust, Python, TypeScript, JavaScript, Go, Java, C, C++,
   Bash, PHP, Lua, and Haskell compare the same source rendered by mdBook and
   tree-sitter in two wide columns.
+- **Interactive blocks** — Rust Playground, hidden lines, and annotations
+  on highlighted blocks.
 - **Contributing** — the root [`CONTRIBUTING.md`](../../CONTRIBUTING.md), also
   via `{{#include}}`.
 
