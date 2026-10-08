@@ -20,6 +20,7 @@ const SKIP_TAG: &str = "notreesitter";
 /// Classes only the preprocessor adds, absent from mdBook's own rendering.
 const OWN_CLASSES: [&str; 3] = ["treesitter", "no-highlight", SKIP_TAG];
 const HIDDEN_LINE_SPAN: &str = "<span class=\"boring\">";
+const LANGUAGE_ATTRIBUTE: &str = "data-language";
 
 /// Fenced blocks exercising every native feature: playground eligibility,
 /// edition handling, the implicit `fn main`, and hidden-line syntaxes.
@@ -96,7 +97,7 @@ fn highlighted_blocks_match_mdbook_structure() {
 }
 
 #[test]
-fn highlighted_blocks_are_actually_highlighted() {
+fn highlighted_blocks_are_ours_alone() {
     let Some(mdbook) = prerequisites() else {
         return;
     };
@@ -108,7 +109,27 @@ fn highlighted_blocks_are_actually_highlighted() {
             html.contains("class=\"ts-"),
             "```{fence} was not highlighted: {html}"
         );
+        let (pre_tag, code_tag, _) = split_block(&html);
+        for tag in [pre_tag, code_tag] {
+            let class = attribute(tag, "class").unwrap_or_default();
+            assert!(
+                !names_highlightjs_language(class),
+                "```{fence} would be re-highlighted by highlight.js: {tag}"
+            );
+        }
     }
+}
+
+/// Whether a `class` value contains what highlight.js reads as a language
+/// request — `lang-…` or `language-…` after a word boundary — which it honours
+/// before `no-highlight`.
+fn names_highlightjs_language(class: &str) -> bool {
+    let is_word = |c: char| c.is_alphanumeric() || c == '_';
+    ["lang-", "language-"].iter().any(|marker| {
+        class
+            .match_indices(marker)
+            .any(|(at, _)| !class[..at].ends_with(is_word))
+    })
 }
 
 /// The parts of a rendered code block that mdBook's features depend on.
@@ -121,24 +142,42 @@ struct BlockStructure {
 }
 
 fn structure(block_html: &str) -> BlockStructure {
-    let pre_tag = &block_html[..block_html.find('>').unwrap() + 1];
-    let code_start = block_html.find("<code").unwrap();
-    let code_open_end = code_start + block_html[code_start..].find('>').unwrap() + 1;
-    let code_tag = &block_html[code_start..code_open_end];
-    let code_end = block_html.rfind("</code>").unwrap();
+    let (pre_tag, code_tag, code_html) = split_block(block_html);
+    let mut code_classes = classes(code_tag);
+    // We carry the fence tag as `data-language`; mdBook as a `language-*` class.
+    if let Some(lang) = attribute(code_tag, LANGUAGE_ATTRIBUTE) {
+        code_classes.insert(format!("language-{lang}"));
+    }
     BlockStructure {
         pre_classes: classes(pre_tag),
-        code_classes: classes(code_tag),
-        text: text_with_hidden_lines(&block_html[code_open_end..code_end]),
+        code_classes,
+        text: text_with_hidden_lines(code_html),
     }
 }
 
+/// A `<pre><code>…</code></pre>` element as its `<pre>` tag, its `<code>` tag,
+/// and the HTML inside `<code>`.
+fn split_block(block_html: &str) -> (&str, &str, &str) {
+    let pre_tag = &block_html[..block_html.find('>').unwrap() + 1];
+    let code_start = block_html.find("<code").unwrap();
+    let code_open_end = code_start + block_html[code_start..].find('>').unwrap() + 1;
+    let code_end = block_html.rfind("</code>").unwrap();
+    (
+        pre_tag,
+        &block_html[code_start..code_open_end],
+        &block_html[code_open_end..code_end],
+    )
+}
+
+fn attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
+    let marker = format!(" {name}=\"");
+    let value = &tag[tag.find(&marker)? + marker.len()..];
+    Some(&value[..value.find('"').unwrap()])
+}
+
 fn classes(tag: &str) -> BTreeSet<String> {
-    let Some(start) = tag.find("class=\"") else {
-        return BTreeSet::new();
-    };
-    let value = &tag[start + "class=\"".len()..];
-    value[..value.find('"').unwrap()]
+    attribute(tag, "class")
+        .unwrap_or_default()
         .split_whitespace()
         .filter(|class| !OWN_CLASSES.contains(class))
         .map(str::to_string)

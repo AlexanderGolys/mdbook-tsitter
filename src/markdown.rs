@@ -54,8 +54,13 @@ const SKIP_TAG: &str = "notreesitter";
 /// Class marking a `<pre>` as rendered by this preprocessor, for styling.
 const PRE_CLASS: &str = "treesitter";
 
-/// Class that tells highlight.js a block is already highlighted.
+/// Class that tells highlight.js a block is already highlighted. It must come
+/// first: without a `language-*` class, highlight.js uses the first class that
+/// is either this or a language name, and annotations can be language names.
 const NO_HIGHLIGHT_CLASS: &str = "no-highlight";
+
+/// `<code>` attribute carrying the block's fence tag, e.g. `data-language="rust"`.
+const LANGUAGE_ATTRIBUTE: &str = "data-language";
 
 /// A fenced block being accumulated between its start and end events.
 struct OpenBlock {
@@ -110,21 +115,24 @@ fn render_block(block: &OpenBlock, registry: &Registry, native: &NativeFeatures)
             return None;
         }
     };
-    let pre_class = class_list([PRE_CLASS.to_string()], prepared.pre_classes);
-    // `no-highlight` keeps mdBook's highlight.js from re-processing the spans we
-    // already produced; the language class is preserved for theming hooks.
-    let code_class = class_list(
-        [NO_HIGHLIGHT_CLASS.to_string(), format!("language-{lang}")],
-        prepared.code_classes,
-    );
+    let pre_class = class_list(PRE_CLASS, prepared.pre_classes);
+    let code_class = class_list(NO_HIGHLIGHT_CLASS, prepared.code_classes);
+    // The fence tag goes in a data attribute rather than a `language-*` class:
+    // mdBook's highlight.js re-highlights any block whose `language-*` class
+    // names a language it knows, ignoring `no-highlight`, and its colours would
+    // override ours.
     Some(format!(
-        "\n<pre class=\"{pre_class}\"><code class=\"{code_class}\">{highlighted}</code></pre>\n",
+        "\n<pre class=\"{pre_class}\"><code class=\"{code_class}\" {LANGUAGE_ATTRIBUTE}=\"{lang}\">{highlighted}</code></pre>\n",
     ))
 }
 
-/// Join our own classes and mdBook's native ones into a `class` attribute value.
-fn class_list<const N: usize>(own: [String; N], native: Vec<String>) -> String {
-    own.into_iter().chain(native).collect::<Vec<_>>().join(" ")
+/// Join our own class and mdBook's native ones into a `class` attribute value,
+/// ours first.
+fn class_list(own: &str, native: Vec<String>) -> String {
+    std::iter::once(own.to_string())
+        .chain(native)
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// Apply replacements to `content`, working back-to-front so earlier byte

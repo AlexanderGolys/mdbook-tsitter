@@ -220,10 +220,13 @@ For example:
   font-style: italic;
 }
 
-code.language-rust .ts-function-macro {
+code[data-language="rust"] .ts-function-macro {
   color: var(--ts-purple);
 }
 ```
+
+Each highlighted block carries its fence tag as `data-language`, so a
+`code[data-language="…"]` selector scopes a rule to one language.
 
 There is no fixed capture list in the preprocessor. Capture names come directly
 from each grammar's queries; names beginning with `_` are treated as internal
@@ -241,18 +244,20 @@ The highlighted events become semantic CSS classes and are spliced back into
 the chapter as ready-made HTML:
 
 ```html
-<pre class="treesitter"><code class="no-highlight language-rust">…spans…</code></pre>
+<pre class="treesitter"><code class="no-highlight" data-language="rust">…spans…</code></pre>
 ```
 
-The original language class remains available for per-language styles, while
-`no-highlight` marks the HTML as already processed.
+The block deliberately has no `language-*` class: mdBook's highlight.js would
+re-highlight any block whose `language-*` class names a language it knows,
+even one marked `no-highlight`, and its colours would override the tree-sitter
+ones. The fence tag is kept in `data-language` instead.
 
 mdBook adds its own code-block features (Rust Playground markup, the implicit
 `fn main`, hidden lines) only to plain-text blocks, so the preprocessor applies
 the same rules before highlighting. A runnable Rust block, for example, becomes:
 
 ```html
-<pre class="treesitter playground"><code class="no-highlight language-rust edition2021">…spans…</code></pre>
+<pre class="treesitter playground"><code class="no-highlight edition2021" data-language="rust">…spans…</code></pre>
 ```
 
 ## Development

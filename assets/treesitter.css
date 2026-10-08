@@ -4,11 +4,9 @@
  * The preprocessor emits one `<span class="ts-…">` per tree-sitter capture,
  * using the capture name as the class (dots become hyphens, and each prefix is
  * added too: `keyword.operator` -> `class="ts-keyword ts-keyword-operator"`).
- * Each block is wrapped in `<code class="language-<fence>">`, so colours can be
- * scoped per language (see "Per-language overrides" at the bottom).
+ * Each block's `<code>` carries its fence tag as `data-language="<fence>"`.
  *
- * Colours are organised in three layers so they stay both theme-adaptive and
- * per-language tunable:
+ * Colours are organised in three layers so they stay theme-adaptive:
  *
  *   1. Hue palette  — `--ts-red`, `--ts-blue`, … redefined per mdBook theme with
  *      that theme's own syntax colours (mdBook sets the theme as a class on
@@ -18,8 +16,7 @@
  *      matches the rest of the page.
  *   2. Semantic map — `--ts-keyword: var(--ts-purple)`, … assigned once; because
  *      it points at hue variables, every theme gets its own colour for free.
- *   3. Capture rules — `.ts-keyword { color: var(--ts-keyword) }`, and per-
- *      language overrides that re-point a capture at a different hue.
+ *   3. Capture rules — `.ts-keyword { color: var(--ts-keyword) }`.
  *
  * To retheme: override a hue (`--ts-blue`), a semantic (`--ts-keyword`), or a
  * rule. A custom mdBook colour scheme falls back to the light hue palette.
@@ -159,26 +156,3 @@ pre.treesitter > code {
 .ts-tag { color: var(--ts-special); }
 .ts-attribute { color: var(--ts-attribute); }
 .ts-label { color: var(--ts-namespace); }
-
-/* ---- Per-language overrides -------------------------------------------- */
-/*
- * Each block is `<code class="language-<fence>">`, so a `code.language-<x>`
- * selector retints only that language. Point captures at hue variables
- * (`var(--ts-blue)`) rather than raw colours so the override still adapts to
- * every theme. Copy a block below to tune another language.
- */
-
-/* Rust — macros read as keywords (rust-analyzer convention); lifetimes stand
-   out as their own colour rather than sharing the namespace hue. */
-code.language-rust .ts-function-macro { color: var(--ts-keyword); }
-code.language-rust .ts-label { color: var(--ts-special); }
-
-/* Haskell — operators are legible in their own hue since Haskell is
-   operator-dense. */
-code.language-haskell .ts-operator { color: var(--ts-cyan); opacity: 0.9; }
-
-/* Macaulay2 — operators (`:=`, `=>`, `->`, `_`, …) carry real meaning, so give
-   them the declaration hue (shared with definitions) rather than leaving them
-   the bare text colour. That hue keeps them distinct from the already-blue
-   calls, fields, and index numbers that fill an M2 expression. */
-code.language-m2 .ts-operator { color: var(--ts-declaration); }

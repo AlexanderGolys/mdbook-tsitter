@@ -51,7 +51,7 @@ pub struct PreparedBlock {
     pub source: String,
     /// Classes for the `<pre>` element.
     pub pre_classes: Vec<String>,
-    /// Classes for the `<code>` element besides the language class.
+    /// Classes for the `<code>` element.
     pub code_classes: Vec<String>,
     /// One flag per line of `source`: whether the line is hidden by default.
     hidden_lines: Vec<bool>,
