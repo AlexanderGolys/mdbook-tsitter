@@ -1,25 +1,23 @@
 # Example book
 
-A buildable book that doubles as the project's documentation site, a usage
-example, and an integration test across several grammars. Its chapters are:
+The project's documentation site, built with `mdbook-tsitter` itself. It
+doubles as a usage example and as an integration test across several grammars.
+Its sections are:
 
-- **Introduction** — the textual documentation from the root
-  [`README.md`](../../README.md), pulled in with `{{#include}}` while its
-  repository-only preview image stays out of the book.
-- **Highlighting demos** — one chapter per language. Macaulay2 has a single
-  tree-sitter example; Rust, Python, TypeScript, JavaScript, Go, Java, C, C++,
-  Bash, PHP, Lua, and Haskell compare the same source rendered by mdBook and
-  tree-sitter in two wide columns.
-- **Interactive blocks** — Rust Playground, hidden lines, and annotations
-  on highlighted blocks.
-- **Contributing** — the root [`CONTRIBUTING.md`](../../CONTRIBUTING.md), also
-  via `{{#include}}`.
+- **Introduction** and **User guide**: the documentation from the root
+  [`README.md`](../../README.md), split into chapters with `{{#include}}`
+  anchors so the README stays the single source.
+- **Examples**: one chapter per language comparing mdBook's highlighting with
+  tree-sitter's, followed by Rust Playground, hidden lines, and annotations on
+  highlighted blocks.
+- **Project**: the root [`CONTRIBUTING.md`](../../CONTRIBUTING.md) and the
+  README's development notes.
 
-Grammars are external compiled parsers plus third-party queries. The deployed
-copies are committed so cloud builds are reproducible.
-[`setup.sh`](setup.sh) refreshes them from a local nvim-treesitter install.
+[`book.toml`](book.toml) is a complete configuration example: languages from the
+built-in list by name, and a custom grammar by repository. Grammars are fetched
+and compiled on the first build and cached afterwards.
 
 ```sh
-./setup.sh          # stage parsers + queries (override sources via env vars)
-mdbook build        # uses the mdbook-tsitter binary on your PATH
+cargo build
+PATH="$PWD/../../target/debug:$PATH" mdbook build
 ```

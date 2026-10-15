@@ -2,26 +2,33 @@
 
 [Introduction](./introduction.md)
 
-# Highlighting demos
+# User guide
 
-- [Rust](./languages/rust.md)
-- [C++](./languages/cpp.md)
-- [Macaulay2](./languages/macaulay2.md)
-- [Haskell](./languages/haskell.md)
-- [Lua](./languages/lua.md)
-- [Python](./languages/python.md)
-- [C](./languages/c.md)
-- [TypeScript](./languages/typescript.md)
-- [Bash](./languages/bash.md)
-- [Java](./languages/java.md)
-- [PHP](./languages/php.md)
-- [Go](./languages/go.md)
-- [JavaScript](./languages/javascript.md)
+- [Configuring languages](./guide/configuration.md)
+- [Grammar sources](./guide/grammar-sources.md)
+- [Theming](./guide/theming.md)
+- [Upgrading from 2.x](./guide/upgrading.md)
+- [How it works](./guide/how-it-works.md)
 
-# Interactive
+# Examples
 
-- [Interactive blocks](./interactive.md)
+- [Languages](./examples/languages.md)
+  - [Rust](./examples/rust.md)
+  - [C++](./examples/cpp.md)
+  - [Macaulay2](./examples/macaulay2.md)
+  - [Haskell](./examples/haskell.md)
+  - [Lua](./examples/lua.md)
+  - [Python](./examples/python.md)
+  - [C](./examples/c.md)
+  - [TypeScript](./examples/typescript.md)
+  - [Bash](./examples/bash.md)
+  - [Java](./examples/java.md)
+  - [PHP](./examples/php.md)
+  - [Go](./examples/go.md)
+  - [JavaScript](./examples/javascript.md)
+- [Interactive blocks](./examples/interactive.md)
 
 # Project
 
-- [Contributing](./contributing.md)
+- [Contributing](./project/contributing.md)
+- [Development](./project/development.md)

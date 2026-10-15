@@ -8,7 +8,7 @@ use std::process;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use mdbook_preprocessor::{self, Preprocessor, MDBOOK_VERSION};
-use mdbook_tsitter::TreeSitterPreprocessor;
+use mdbook_tsitter::{TreeSitterPreprocessor, DEFAULT_CSS};
 use semver::{Version, VersionReq};
 
 #[derive(Parser)]
@@ -18,10 +18,6 @@ struct Cli {
     command: Option<Command>,
 }
 
-/// The default class-based stylesheet, embedded so it can be emitted without
-/// the source checkout.
-const DEFAULT_CSS: &str = include_str!("../assets/treesitter.css");
-
 #[derive(Subcommand)]
 enum Command {
     /// Answer mdBook's renderer-support query: exit 0 if supported, 1 if not.
@@ -29,9 +25,9 @@ enum Command {
         /// The renderer mdBook is about to run.
         renderer: String,
     },
-    /// Print the default theme to stdout, e.g.
-    /// `mdbook-tsitter css > theme/treesitter.css`, then reference it from
-    /// `[output.html] additional-css`.
+    /// Print the default theme to stdout as a starting point for a custom one,
+    /// e.g. `mdbook-tsitter css > theme/treesitter.css`, referenced from
+    /// `[output.html] additional-css` with `default-css = false`.
     Css,
 }
 

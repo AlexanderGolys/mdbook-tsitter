@@ -5,8 +5,9 @@
 //! same `<pre>`/`<code>` classes (playground, edition, annotations), the same
 //! hidden-line spans, and the same text the Run and Copy buttons read.
 //!
-//! Needs `mdbook` on `PATH` (or in `$MDBOOK`) and the parsers committed under
-//! `examples/languages`; the test is skipped with a note when either is absent.
+//! Needs `mdbook` on `PATH` (or in `$MDBOOK`); the test is skipped with a note
+//! when it is absent. The Rust and TypeScript grammars are fetched and compiled
+//! on the first run, which needs `git` and a C compiler.
 
 use std::collections::BTreeSet;
 use std::env;
@@ -14,7 +15,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-const EXAMPLE_BOOK: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/languages");
 const PREPROCESSOR: &str = env!("CARGO_BIN_EXE_mdbook-tsitter");
 const SKIP_TAG: &str = "notreesitter";
 /// Classes only the preprocessor adds, absent from mdBook's own rendering.
@@ -243,20 +243,11 @@ fn build_book(mdbook: &Path, name: &str, extra_config: &str) -> PathBuf {
     }
     fs::write(src.join("SUMMARY.md"), summary).unwrap();
 
-    let example = Path::new(EXAMPLE_BOOK);
-    let language = |name: &str| {
-        format!(
-            "[preprocessor.tsitter.languages.{name}]\nlibrary = {:?}\nhighlights = {:?}\n",
-            example.join(format!("parsers/{name}.so")),
-            example.join(format!("queries/{name}/highlights.scm")),
-        )
-    };
     fs::write(
         root.join("book.toml"),
         format!(
-            "[book]\ntitle = \"parity\"\n\n[preprocessor.tsitter]\ncommand = {PREPROCESSOR:?}\n\n{}\n{}\n{extra_config}",
-            language("rust"),
-            language("typescript"),
+            "[book]\ntitle = \"parity\"\n\n[preprocessor.tsitter]\ncommand = {PREPROCESSOR:?}\n\n\
+             [preprocessor.tsitter.languages]\nrust = {{}}\ntypescript = {{}}\n\n{extra_config}",
         ),
     )
     .unwrap();
@@ -288,17 +279,6 @@ fn prerequisites() -> Option<PathBuf> {
         eprintln!("skipping: `mdbook` not found on PATH or in $MDBOOK");
         return None;
     };
-    let parsers = Path::new(EXAMPLE_BOOK).join("parsers");
-    if !["rust", "typescript"]
-        .iter()
-        .all(|lang| parsers.join(format!("{lang}.so")).exists())
-    {
-        eprintln!(
-            "skipping: example parsers not found in {}",
-            parsers.display()
-        );
-        return None;
-    }
     Some(mdbook)
 }
 

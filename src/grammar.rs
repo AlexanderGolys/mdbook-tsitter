@@ -1,9 +1,9 @@
 //! Grammar resolution: maps a code-fence language tag (e.g. `rust`) to a
 //! configured tree-sitter [`HighlightConfiguration`]. Every grammar is loaded
-//! at runtime from a shared library described in `book.toml` ([`load_dynamic`]).
-//! Dynamic loading is what makes the preprocessor work for *any* language: point
-//! it at a compiled parser and a highlights query and it highlights that
-//! language.
+//! at runtime as described in `book.toml` ([`load_dynamic`]): fetched and
+//! compiled from its git repository (known by name or configured), or from a
+//! prebuilt shared library.
+//! Dynamic loading is what makes the preprocessor work for *any* language.
 //!
 //! All grammars in a run share one capture-index space (see [`Registry::build`])
 //! so that spans produced by an injected sub-language resolve to the same CSS
@@ -13,14 +13,15 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use libloading::{Library, Symbol};
 use tree_sitter::Language;
 use tree_sitter_highlight::{Highlight, HighlightConfiguration, Highlighter, HtmlRenderer};
 use tree_sitter_language::LanguageFn;
 
 use crate::config::{Config, LanguageConfig};
-use crate::{predicates, render};
+use crate::fetch::{FetchedGrammar, GrammarQueries, GrammarRepo};
+use crate::{known, predicates, render, warn};
 
 /// All grammars known to a single preprocessor run. Each grammar is stored once
 /// in `configs` and reachable through every fence tag (alias) in `by_alias`.
@@ -51,7 +52,7 @@ impl Registry {
             let (cfg, library) = load_dynamic(name, lang_cfg, root, config.inject)?;
             let index = configs.len();
             configs.push(cfg);
-            libraries.push(library);
+            libraries.extend(library);
             for alias in aliases_of(name, lang_cfg) {
                 if by_alias
                     .get(alias)
@@ -156,24 +157,137 @@ fn union_capture_names(configs: &[HighlightConfiguration]) -> Vec<String> {
 /// `tree_sitter_rust`. Overridable per language via the `symbol` config key.
 const SYMBOL_PREFIX: &str = "tree_sitter_";
 
-/// Load a grammar from a compiled parser shared library, as configured in
-/// `book.toml`. `root` is the book project root that relative paths resolve
-/// against. Returns the configuration and the library that backs it (which the
-/// caller must keep alive).
+/// Load a grammar as configured in `book.toml`: from a compiled parser
+/// library, or else from its git repository (configured, or known by name).
+/// `root` is the book project root that relative paths resolve against.
+/// Returns the configuration and, for a `library` grammar, the library that
+/// backs it (which the caller must keep alive; fetched parsers are kept alive
+/// by the loader).
 fn load_dynamic(
     name: &str,
     cfg: &LanguageConfig,
     root: &Path,
     inject: bool,
-) -> Result<(HighlightConfiguration, Library)> {
-    let library_path = resolve(
-        root,
-        cfg.library.as_ref().ok_or_else(|| {
-            anyhow!(
-                "language `{name}` needs a `library` pointing at a compiled parser shared object"
-            )
-        })?,
-    );
+) -> Result<(HighlightConfiguration, Option<Library>)> {
+    let configure = |language: &Language, fetched: GrammarQueries| {
+        configure(name, cfg, root, inject, language.clone(), fetched)
+    };
+    match (&cfg.git, &cfg.library) {
+        (Some(_), Some(_)) => {
+            bail!("language `{name}` sets both `git` and `library`; keep one")
+        }
+        (None, Some(library)) => {
+            warn(&deprecated_library(name));
+            let (language, library) = load_library(name, cfg, &resolve(root, library))?;
+            Ok((
+                configure(&language, GrammarQueries::default())?,
+                Some(library),
+            ))
+        }
+        (_, None) => {
+            let grammar = FetchedGrammar::fetch(name, &GrammarRepo::configured(name, cfg, root)?)?;
+            let language = grammar.compile()?;
+            let reading = || format!("reading the queries of `{name}`");
+            // A known grammar prefers the queries tested against its pinned
+            // revision, which are richer than most repositories' own; its own
+            // are the fallback, and the only source for other grammars.
+            let preferred = match grammar.is_known() {
+                true => grammar.pinned_queries(),
+                false => grammar.own_queries(),
+            }
+            .with_context(reading)?;
+            let preferred_error = match preferred.map(|queries| configure(&language, queries)) {
+                Some(Ok(config)) => return Ok((config, None)),
+                Some(Err(error)) => Some(error),
+                None => None,
+            };
+            let own = match grammar.is_known() {
+                true => grammar.own_queries().with_context(reading)?,
+                false => None,
+            };
+            match (own, preferred_error) {
+                (Some(own), error) => {
+                    if let Some(error) = error {
+                        eprintln!(
+                            "mdbook-tsitter: `{name}`: nvim-treesitter's queries do not match its \
+                             parser ({}); using its own",
+                            first_line(&error)
+                        );
+                    }
+                    Ok((configure(&language, own)?, None))
+                }
+                (None, Some(error)) => Err(error),
+                (None, None) => Ok((configure(&language, GrammarQueries::default())?, None)),
+            }
+        }
+    }
+}
+
+/// The first line of an error's root cause, without a trailing colon.
+fn first_line(error: &anyhow::Error) -> String {
+    let cause = error.root_cause().to_string();
+    let line = cause.lines().next().unwrap_or_default();
+    line.trim_end_matches(':').to_string()
+}
+
+/// The deprecation notice for a language configured with `library`.
+fn deprecated_library(name: &str) -> String {
+    let replacement = if known::lookup(name).is_some() {
+        "remove `library` and `symbol` to fetch the grammar from the built-in list"
+    } else {
+        "replace `library` and `symbol` with `git`, the grammar's repository URL or local path"
+    };
+    format!(
+        "`{name}`: `library` is deprecated and will be removed in a future major release; \
+         {replacement}"
+    )
+}
+
+/// Build the highlight configuration of `language` from its `fetched`
+/// queries, each overridden by a query file configured in `book.toml`.
+/// Queries are normalised: nvim-specific predicates (`#lua-match?`) become
+/// standard ones that tree-sitter-highlight evaluates; otherwise the predicate
+/// is ignored and its capture fires unconditionally (e.g. every identifier
+/// becomes a `@constant`). See [`crate::predicates`].
+fn configure(
+    name: &str,
+    cfg: &LanguageConfig,
+    root: &Path,
+    inject: bool,
+    language: Language,
+    fetched: GrammarQueries,
+) -> Result<HighlightConfiguration> {
+    let query = |configured: Option<&String>, kind: &str, fetched: Option<String>| {
+        let text = match configured {
+            Some(path) => Some(read_query(&resolve(root, path), name, kind)?),
+            None => fetched,
+        };
+        Ok::<_, anyhow::Error>(text)
+    };
+    let highlights = query(cfg.highlights.as_ref(), "highlights", fetched.highlights)?
+        .map(|text| predicates::normalize_highlights(&text))
+        .ok_or_else(|| {
+            anyhow!("language `{name}` needs a `highlights` query; its grammar ships none")
+        })?;
+    // With injection off we never read the injections query, so a broken
+    // `injections.scm` cannot fail compilation and take `highlights` down with it.
+    let injections = if inject {
+        query(cfg.injections.as_ref(), "injections", fetched.injections)?
+            .map(|text| predicates::normalize(&text))
+            .unwrap_or_default()
+    } else {
+        String::new()
+    };
+    let locals = query(cfg.locals.as_ref(), "locals", fetched.locals)?
+        .map(|text| predicates::normalize(&text))
+        .unwrap_or_default();
+
+    HighlightConfiguration::new(language, name, &highlights, &injections, &locals)
+        .with_context(|| format!("invalid tree-sitter queries for `{name}`"))
+}
+
+/// Load a compiled parser shared library and its language constructor.
+fn load_library(name: &str, cfg: &LanguageConfig, path: &Path) -> Result<(Language, Library)> {
     let symbol = cfg
         .symbol
         .clone()
@@ -182,33 +296,15 @@ fn load_dynamic(
     // SAFETY: we load a tree-sitter parser whose exported symbol is the standard
     // `extern "C" fn() -> *const ()` language constructor. The library is
     // returned to the caller so it outlives the `Language` derived from it.
-    let library = unsafe { Library::new(&library_path) }
-        .with_context(|| format!("loading parser `{}`", library_path.display()))?;
+    let library = unsafe { Library::new(path) }
+        .with_context(|| format!("loading parser `{}`", path.display()))?;
     let language: Language = unsafe {
-        let constructor: Symbol<unsafe extern "C" fn() -> *const ()> =
-            library.get(symbol.as_bytes()).with_context(|| {
-                format!("symbol `{symbol}` not found in {}", library_path.display())
-            })?;
+        let constructor: Symbol<unsafe extern "C" fn() -> *const ()> = library
+            .get(symbol.as_bytes())
+            .with_context(|| format!("symbol `{symbol}` not found in {}", path.display()))?;
         LanguageFn::from_raw(*constructor).into()
     };
-
-    // Normalise nvim-specific predicates (`#lua-match?`) into standard ones that
-    // tree-sitter-highlight evaluates; otherwise the predicate is ignored and
-    // its capture fires unconditionally (e.g. every identifier becomes a
-    // `@constant`). See [`crate::predicates`].
-    let highlights = predicates::normalize(&read_query(root, &cfg.highlights, name, "highlights")?);
-    // With injection off we never read the injections query, so a broken
-    // `injections.scm` cannot fail compilation and take `highlights` down with it.
-    let injections = if inject {
-        predicates::normalize(&read_optional_query(root, cfg.injections.as_ref())?)
-    } else {
-        String::new()
-    };
-    let locals = predicates::normalize(&read_optional_query(root, cfg.locals.as_ref())?);
-
-    let config = HighlightConfiguration::new(language, name, &highlights, &injections, &locals)
-        .with_context(|| format!("invalid tree-sitter queries for `{name}`"))?;
-    Ok((config, library))
+    Ok((language, library))
 }
 
 /// Resolve a possibly-relative path against the book root.
@@ -221,19 +317,7 @@ fn resolve(root: &Path, path: &str) -> PathBuf {
     }
 }
 
-fn read_query(root: &Path, path: &str, lang: &str, kind: &str) -> Result<String> {
-    let full = resolve(root, path);
-    fs::read_to_string(&full)
-        .with_context(|| format!("reading {kind} query for `{lang}` from {}", full.display()))
-}
-
-fn read_optional_query(root: &Path, path: Option<&String>) -> Result<String> {
-    match path {
-        Some(p) => {
-            let full = resolve(root, p);
-            fs::read_to_string(&full)
-                .with_context(|| format!("reading query from {}", full.display()))
-        }
-        None => Ok(String::new()),
-    }
+fn read_query(path: &Path, lang: &str, kind: &str) -> Result<String> {
+    fs::read_to_string(path)
+        .with_context(|| format!("reading {kind} query for `{lang}` from {}", path.display()))
 }

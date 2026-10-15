@@ -5,4 +5,4 @@
 
 [View the project on GitHub](https://github.com/AlexanderGolys/mdbook-tsitter).
 
-{{#include ../../../README.md:book-content}}
+{{#include ../../../README.md:introduction}}

@@ -3,15 +3,29 @@
 //! ```toml
 //! [preprocessor.tsitter]
 //!
-//! # Add a language by pointing at a compiled parser and a highlights query.
-//! [preprocessor.tsitter.languages.nix]
-//! library = "parsers/libtree-sitter-nix.so"   # compiled grammar (relative to book root)
-//! highlights = "queries/nix/highlights.scm"    # tree-sitter highlights query
-//! # symbol = "tree_sitter_nix"                 # optional; defaults to tree_sitter_<name>
-//! # injections = "queries/nix/injections.scm"  # optional
-//! # locals = "queries/nix/locals.scm"          # optional
-//! # aliases = ["nix"]                           # fence tags; defaults to the table key
+//! # A language from the built-in grammar list needs no source: its pinned
+//! # grammar is fetched and compiled on first build.
+//! [preprocessor.tsitter.languages]
+//! rust = {}
+//! typescript = { aliases = ["ts"] }
+//!
+//! # Any other grammar is named by its repository URL or local path.
+//! [preprocessor.tsitter.languages.mylang]
+//! git = "https://github.com/someone/tree-sitter-mylang"
+//! # rev = "v1.0.0"                             # optional; tag, branch or commit
+//! # location = "mylang"                        # optional; grammar subdirectory
+//!
+//! # Deprecated: point at a compiled parser and a highlights query.
+//! [preprocessor.tsitter.languages.lua]
+//! library = "parsers/libtree-sitter-lua.so"   # compiled grammar (relative to book root)
+//! highlights = "queries/lua/highlights.scm"    # tree-sitter highlights query
+//! # symbol = "tree_sitter_lua"                 # optional; defaults to tree_sitter_<name>
+//! # injections = "queries/lua/injections.scm"  # optional
+//! # locals = "queries/lua/locals.scm"          # optional
+//! # aliases = ["lua"]                           # fence tags; defaults to the table key
 //! ```
+//!
+//! Query paths given for a fetched grammar override the repository's own.
 
 use std::collections::HashMap;
 
@@ -33,6 +47,12 @@ pub struct Config {
     /// `inject = false` to switch injection off entirely, e.g. if an injected
     /// grammar misbehaves.
     pub inject: bool,
+    /// Whether the bundled stylesheet is embedded in every chapter with a
+    /// highlighted block. It sits in a cascade layer, so any `additional-css`
+    /// rule overrides it; set `default-css = false` only to drop it entirely,
+    /// e.g. for a stylesheet that replaces it.
+    #[serde(rename = "default-css")]
+    pub default_css: bool,
 }
 
 impl Default for Config {
@@ -40,21 +60,36 @@ impl Default for Config {
         Self {
             languages: HashMap::new(),
             inject: true,
+            default_css: true,
         }
     }
 }
 
-/// One dynamically loaded grammar.
+/// One dynamically loaded grammar, taken from a compiled parser on disk
+/// (`library`), a git repository (`git`), or the built-in grammar list.
 #[derive(Debug, Deserialize)]
 pub struct LanguageConfig {
+    /// URL of the grammar's git repository, fetched and compiled on demand;
+    /// defaults to the built-in list's repository for the language.
+    pub git: Option<String>,
+    /// Tag, branch or commit of `git` to use; defaults to the built-in list's
+    /// pinned revision, or for other repositories their default branch.
+    pub rev: Option<String>,
+    /// Subdirectory of `git` holding the grammar, for repositories that
+    /// contain several grammars; found from the repository's
+    /// `tree-sitter.json` or the built-in list when not given.
+    pub location: Option<String>,
     /// Path to the compiled parser shared object (`.so` on Linux, `.dylib` on
-    /// macOS, `.dll` on Windows).
+    /// macOS, `.dll` on Windows). Deprecated in favour of the built-in list
+    /// and `git`; a build using it prints a warning.
     pub library: Option<String>,
-    /// The parser's exported constructor symbol; defaults to
-    /// `tree_sitter_<name>` (with `-` mapped to `_`).
+    /// The parser's exported constructor symbol in `library`; defaults to
+    /// `tree_sitter_<name>` (with `-` mapped to `_`). Deprecated with
+    /// `library`.
     pub symbol: Option<String>,
-    /// Path to the highlights query (`highlights.scm`).
-    pub highlights: String,
+    /// Path to the highlights query (`highlights.scm`); required with
+    /// `library`, defaults to the fetched grammar's own.
+    pub highlights: Option<String>,
     /// Optional injections query for embedded languages.
     pub injections: Option<String>,
     /// Optional locals query for scope-aware highlighting.

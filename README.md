@@ -12,18 +12,20 @@
   <a href="https://spectralflux.dev/mdbook-tsitter"><strong>Open the live example book</strong></a>
 </p>
 
-<!-- ANCHOR: book-content -->
+<!-- ANCHOR: introduction -->
 
 `mdbook-tsitter` is an mdBook preprocessor that parses fenced code blocks with
 [tree-sitter](https://tree-sitter.github.io/) and renders the resulting captures
-as themeable HTML. It is grammar-agnostic: supply a compiled parser and the
-grammar's highlight queries, and the same preprocessor can handle anything from
-Rust and Lua to a language of your own.
+as themeable HTML. It is grammar-agnostic: list a language it knows, name any
+grammar's git repository, or supply a compiled parser and its highlight
+queries, and the same preprocessor can handle anything from Rust and Lua to a
+language of your own.
 
 ## Features
 
-- **Grammar-agnostic.** Use any tree-sitter grammar that can be built as a
-  shared library.
+- **Grammar-agnostic.** Over 300 common languages work by name; any other
+  tree-sitter grammar works from its repository or a prebuilt parser. Grammars
+  are fetched and compiled on the first build.
 - **Structural highlighting.** Definitions, calls, types, parameters,
   properties, macros, and other syntax can receive distinct styles whenever the
   grammar's queries distinguish them.
@@ -39,10 +41,12 @@ Rust and Lua to a language of your own.
 - **Build-time rendering.** Highlighted HTML is generated with the book; the
   reader does not need a tree-sitter runtime.
 
-The [example book](https://spectralflux.dev/mdbook-tsitter) includes a custom
-Macaulay2 grammar and substantial side-by-side examples in Rust, Python,
-TypeScript, JavaScript, Go, Java, C, C++, Bash, PHP, Lua, and Haskell. Its
-complete source lives in [`examples/languages`](examples/languages).
+The [documentation book](https://spectralflux.dev/mdbook-tsitter) is built with
+the preprocessor itself. Its examples include a custom Macaulay2 grammar and
+substantial side-by-side comparisons in Rust, Python, TypeScript, JavaScript,
+Go, Java, C, C++, Bash, PHP, Lua, and Haskell, and its
+[`book.toml`](examples/languages/book.toml) is a complete configuration
+example.
 
 ## Installation
 
@@ -53,40 +57,26 @@ cargo install mdbook-tsitter
 ```
 
 The `mdbook-tsitter` binary must be available on `PATH` when `mdbook build`
-runs. Each configured language also needs:
-
-1. A compiled tree-sitter parser (`.so`, `.dylib`, or `.dll`).
-2. Its `queries/highlights.scm` file.
-3. Optionally, `injections.scm` and `locals.scm`.
-
-See [Getting parsers and queries](#getting-parsers-and-queries) for common ways
-to obtain them.
+runs. Grammars that are fetched rather than prebuilt also need `git` and a C
+compiler (`cc`, `gcc`, `clang`, or MSVC) on the build machine; see
+[Grammar sources](https://spectralflux.dev/mdbook-tsitter/guide/grammar-sources.html).
 
 ## Quick start
 
-Generate the default stylesheet in your book:
-
-```sh
-mkdir -p theme
-mdbook-tsitter css > theme/treesitter.css
-```
-
-Place a parser and its highlight query in your project, then configure
-`book.toml`:
+List the languages to highlight in `book.toml`:
 
 ```toml
 [preprocessor.tsitter]
 
-[preprocessor.tsitter.languages.rust]
-library = "parsers/rust.so"
-highlights = "queries/rust/highlights.scm"
-
-[output.html]
-additional-css = ["theme/treesitter.css"]
+[preprocessor.tsitter.languages]
+rust = {}
+python = {}
+typescript = { aliases = ["ts"] }
 ```
 
-Paths are relative to the book root. After that, ordinary fenced blocks for the
-configured language are highlighted automatically:
+The first build fetches and compiles each grammar; later builds reuse it. After
+that, ordinary fenced blocks for the configured languages are highlighted
+automatically:
 
 ````markdown
 ```rust
@@ -105,7 +95,11 @@ mdbook build
 Languages that are not configured, blocks without a language tag, and blocks
 that opt out are left untouched for mdBook to handle.
 
+<!-- ANCHOR_END: introduction -->
+
 ## Configuring languages
+
+<!-- ANCHOR: configuration -->
 
 Everything lives under `[preprocessor.tsitter]`.
 
@@ -114,28 +108,33 @@ Everything lives under `[preprocessor.tsitter]`.
 | key      | default | meaning |
 | -------- | ------- | ------- |
 | `inject` | `true`  | Highlight embedded languages using configured injection queries. Only configured languages are used. Set this to `false` to disable injections globally. |
+| `default-css` | `true` | Embed the bundled stylesheet in chapters with highlighted blocks. See [Theming](https://spectralflux.dev/mdbook-tsitter/guide/theming.html). |
 
 ### Language options
 
-Add one `[preprocessor.tsitter.languages.<name>]` table per grammar:
+Add one entry to `[preprocessor.tsitter.languages]` per grammar. A language
+from the [built-in list](https://spectralflux.dev/mdbook-tsitter/guide/grammar-sources.html#from-the-built-in-list)
+needs no keys at all; any other grammar needs `git` as its source. Paths are
+relative to the book root.
 
 | key          | required | meaning |
 | ------------ | -------- | ------- |
-| `library`    | yes      | Path to the compiled parser shared library. |
-| `highlights` | yes      | Path to the grammar's highlights query. |
-| `symbol`     | no       | Parser constructor symbol; defaults to `tree_sitter_<name>` with `-` changed to `_`. |
-| `injections` | no       | Path to an injections query for embedded languages. |
-| `locals`     | no       | Path to a locals query for scope-aware highlighting. |
-| `aliases`    | no       | Additional code-fence names handled by this grammar; defaults to the table key. |
+| `git`        | for unlisted languages | URL of the grammar's git repository, or a path to a local one, fetched and compiled on demand. Defaults to the built-in list's repository. |
+| `rev`        | no       | Tag, branch, or commit to use. Defaults to the built-in list's pinned revision, or for other repositories their default branch. |
+| `location`   | no       | Subdirectory holding the grammar, for repositories with several grammars. Usually found automatically. |
+| `highlights` | no       | Path to a highlights query, used instead of the grammar's. |
+| `injections` | no       | Path to an injections query for embedded languages, used instead of the grammar's. |
+| `locals`     | no       | Path to a locals query for scope-aware highlighting, used instead of the grammar's. |
+| `aliases`    | no       | Code-fence names handled by this grammar; defaults to the entry's name. |
+| `library`    | no       | **Deprecated.** Path to a compiled parser shared library, used instead of fetching; requires `highlights`. |
+| `symbol`     | no       | **Deprecated.** Constructor symbol in `library`; defaults to `tree_sitter_<name>` with `-` changed to `_`. |
 
-A fuller Markdown configuration might look like this:
+A language may need its own table when it carries several keys:
 
 ```toml
 [preprocessor.tsitter.languages.markdown]
-library = "parsers/markdown.so"
-highlights = "queries/markdown/highlights.scm"
-injections = "queries/markdown/injections.scm"
 aliases = ["md", "markdown"]
+injections = "queries/markdown/injections.scm"
 ```
 
 Injection queries can select another configured grammar using standard
@@ -176,33 +175,89 @@ let highlighted = "by mdBook";
 ```
 ````
 
-## Getting parsers and queries
+<!-- ANCHOR_END: configuration -->
 
-Most grammars live in a `tree-sitter-<language>` repository. With the
-[tree-sitter CLI](https://github.com/tree-sitter/tree-sitter), a typical parser
-build looks like:
+## Grammar sources
 
-```sh
-git clone https://github.com/<owner>/tree-sitter-nix
-cd tree-sitter-nix
-tree-sitter build --output libtree-sitter-nix.so
+<!-- ANCHOR: grammar-sources -->
+
+### From the built-in list
+
+The preprocessor knows the repositories of the
+[grammars nvim-treesitter supports](https://github.com/nvim-treesitter/nvim-treesitter/blob/main/SUPPORTED_LANGUAGES.md),
+each pinned to the revision nvim-treesitter tests. Use the language's name
+there as its entry; `-` and `_` are interchangeable (`c-sharp` or `c_sharp`).
+A mistyped name fails with a suggestion when a listed name is close.
+
+Their queries are nvim-treesitter's for the pinned revision, with the queries
+they inherit from other languages; they are tested against exactly that parser
+and are usually richer than a repository's own. Where nvim-treesitter has none,
+or they do not match the parser, the repository's own queries are used.
+
+### From a git repository
+
+With `git`, the repository is shallow-fetched at `rev` and its parser
+(`src/parser.c` plus any external scanner) is compiled with the platform's C
+compiler. A grammar that commits no generated parser is generated first, which
+needs the [tree-sitter CLI](https://github.com/tree-sitter/tree-sitter) and
+Node.js.
+
+The repository's `tree-sitter.json` locates the grammar and lists its queries,
+so `location` is rarely needed. Queries a grammar builds on from another
+grammar (TypeScript's extend JavaScript's) are fetched from that grammar's
+repository, at the version the grammar's `package.json` pins. Without a
+`tree-sitter.json`, queries are read from `queries/` beside the grammar or at
+the repository root.
+
+Checkouts and compiled parsers are cached per user, under `mdbook-tsitter/` in
+the user cache directory (`$XDG_CACHE_HOME` or `~/.cache` on Linux and macOS,
+`%LOCALAPPDATA%` on Windows), and shared between books. Network access is only
+needed the first time a revision is used.
+
+A cached checkout is reused for as long as it exists, so an unpinned grammar
+stays at the commit first fetched. Pin `rev` to choose the version explicitly;
+changing it fetches the new revision. Deleting the cache directory refetches
+everything.
+
+`git` may also be a path to a local repository, absolute or relative to the
+book root, such as a grammar you are developing. Its `rev` (by default `HEAD`)
+is resolved on every build, so new commits are picked up; uncommitted changes
+are not.
+
+```toml
+[preprocessor.tsitter.languages.mylang]
+git = "../tree-sitter-mylang"
 ```
 
-Use `.dylib` on macOS or `.dll` on Windows, and point `library` at the exact
-output path. The extension is never assumed.
+To use different queries, such as your own, set `highlights` (and optionally
+`injections` and `locals`) to query files in your book.
 
-The highlight query is usually the grammar's `queries/highlights.scm`. An
-existing [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
-installation is another convenient source of compiled parsers and queries.
+### From a compiled parser (deprecated)
 
-The setup script in [`examples/languages/setup.sh`](examples/languages/setup.sh)
-shows one way to stage several parsers and their queries for a complete book.
+A language may still name a prebuilt parser shared library with `library` (and
+its constructor with `symbol`), with `highlights` pointing at its query. This is
+deprecated and prints a warning; see
+[Upgrading from 2.x](https://spectralflux.dev/mdbook-tsitter/guide/upgrading.html) to replace it.
+
+<!-- ANCHOR_END: grammar-sources -->
 
 ## Theming
 
-The generated stylesheet covers standard tree-sitter and nvim-treesitter
-capture names and adapts to mdBook's built-in colour schemes. Edit it directly
-or add a later stylesheet with your overrides.
+<!-- ANCHOR: theming -->
+
+A bundled stylesheet is embedded automatically. It covers standard
+tree-sitter and nvim-treesitter capture names and follows mdBook's built-in
+colour schemes, so most books need no CSS of their own.
+
+The embedded stylesheet sits in the `mdbook-tsitter` cascade layer, so any rule
+in your own `[output.html] additional-css` overrides it, whatever its
+specificity. Add a stylesheet only for what you want to change, such as custom
+capture names or colours for a custom mdBook theme:
+
+```toml
+[output.html]
+additional-css = ["theme/highlighting.css"]
+```
 
 Each capture gets the `ts-` prefix, dots become hyphens, and every prefix is
 emitted so broad rules can cascade into more specific ones:
@@ -228,11 +283,77 @@ code[data-language="rust"] .ts-function-macro {
 Each highlighted block carries its fence tag as `data-language`, so a
 `code[data-language="…"]` selector scopes a rule to one language.
 
+To replace the theme entirely, start from the bundled stylesheet, reference it
+from `additional-css`, and turn the embedded copy off:
+
+```sh
+mdbook-tsitter css > theme/treesitter.css
+```
+
+```toml
+[preprocessor.tsitter]
+default-css = false
+```
+
 There is no fixed capture list in the preprocessor. Capture names come directly
 from each grammar's queries; names beginning with `_` are treated as internal
 and left unstyled.
 
+<!-- ANCHOR_END: theming -->
+
+## Upgrading from 2.x
+
+<!-- ANCHOR: upgrading -->
+
+Configurations written for 2.x keep working, and each deprecated setting prints
+a warning naming its replacement. The deprecated settings will be removed in the
+next major release.
+
+- **`library` and `symbol`.** For a language from the
+  [built-in list](https://spectralflux.dev/mdbook-tsitter/guide/grammar-sources.html#from-the-built-in-list),
+  remove them along with the `highlights` path: the grammar and its queries are
+  fetched instead. Any other grammar is named by `git`, its repository URL or a
+  path to a local checkout.
+- **A copy of the bundled stylesheet in `additional-css`.** The stylesheet is
+  now embedded, so remove the copy, or keep only your own changes in it.
+
+A 2.x configuration such as
+
+```toml
+[preprocessor.tsitter.languages.rust]
+library = "parsers/rust.so"
+highlights = "queries/rust/highlights.scm"
+
+[preprocessor.tsitter.languages.mylang]
+library = "parsers/mylang.so"
+highlights = "queries/mylang/highlights.scm"
+
+[output.html]
+additional-css = ["theme/treesitter.css"]
+```
+
+becomes
+
+```toml
+[preprocessor.tsitter.languages]
+rust = {}
+
+[preprocessor.tsitter.languages.mylang]
+git = "https://github.com/someone/tree-sitter-mylang"
+rev = "v1.0.0"
+```
+
+and the committed parsers, queries, and stylesheet can be deleted.
+
+Highlighting from nvim-treesitter style queries is also more faithful in 3.0:
+`#contains?` and Vim's `\c` regex flag are evaluated, and spell-checking and
+helper captures no longer strip the colour from the nodes they mark.
+
+<!-- ANCHOR_END: upgrading -->
+
 ## How it works
+
+<!-- ANCHOR: how-it-works -->
 
 mdBook passes every chapter to the preprocessor as Markdown. `mdbook-tsitter`
 uses the same Markdown parser as mdBook
@@ -260,7 +381,11 @@ the same rules before highlighting. A runnable Rust block, for example, becomes:
 <pre class="treesitter playground"><code class="no-highlight edition2021" data-language="rust">…spans…</code></pre>
 ```
 
+<!-- ANCHOR_END: how-it-works -->
+
 ## Development
+
+<!-- ANCHOR: development -->
 
 Run the Rust test suite:
 
@@ -273,20 +398,23 @@ with the real mdBook and checks that every highlighted block has the same
 structure as mdBook's own rendering of it: classes, hidden lines, and the text
 the Run and Copy buttons use.
 
-Build the multi-language example book:
+Build the documentation book, which fetches its grammars on the first build:
 
 ```sh
-./examples/languages/setup.sh
-mdbook build examples/languages
+cargo build
+PATH="$PWD/target/debug:$PATH" mdbook build examples/languages
 ```
 
-The parsers and queries used by the deployed example are committed so the
-hosted build is reproducible. The setup script is useful when refreshing those
-assets from local grammar installations.
+Refresh the built-in grammar list from nvim-treesitter's current parser list
+(needs `git`, `curl`, and a Lua interpreter):
+
+```sh
+./scripts/update-grammar-list.sh
+```
+
+<!-- ANCHOR_END: development -->
 
 ## License
 
 Licensed under either of [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE) at
 your option.
-
-<!-- ANCHOR_END: book-content -->
