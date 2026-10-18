@@ -33,13 +33,20 @@ language of your own.
   Markdown, languages embedded in strings, and other nested syntax.
 - **Themeable capture classes.** Captures become predictable `ts-…` CSS
   classes, with a bundled stylesheet that follows mdBook's light, rust, coal,
-  navy, and ayu themes.
+  navy, and ayu themes. A `highlight_ts.css` in the theme directory replaces
+  it, and a theme that only restyles highlight.js colours tree-sitter blocks
+  to match.
+- **Side-by-side blocks.** Label consecutive blocks with `pane="…"` to show
+  them side by side under their labels, such as before and after a change,
+  or the same idea in several languages.
 - **Language aliases and locals queries.** Match several fence names to one
   grammar and opt into scope-aware query behavior where the grammar supports it.
 - **Selective processing.** Leave individual blocks to mdBook when you need its
   built-in Rust Playground behavior or other native code-block features.
 - **Build-time rendering.** Highlighted HTML is generated with the book; the
   reader does not need a tree-sitter runtime.
+- **Plays well with other preprocessors.** Blocks are found exactly as mdBook
+  finds them, and highlighted code stays out of reach of math preprocessors.
 
 The [documentation book](https://spectralflux.dev/mdbook-tsitter) is built with
 the preprocessor itself. Its examples include a custom Macaulay2 grammar and
@@ -177,37 +184,9 @@ let highlighted = "by mdBook";
 
 ### Side-by-side blocks
 
-Label consecutive blocks with `pane="…"` to show them side by side, each under
-its label. Only blank lines may separate the blocks of one group, and the panes
-stack on narrow screens. Each pane is rendered as it would be on its own, so a
-pane can be left to mdBook with `notreesitter` or be in a language that is not
-configured:
-
-````markdown
-```rust,pane="Before"
-let total = a + b;
-```
-
-```rust,pane="After"
-let total = a.saturating_add(b);
-```
-````
-
-The `compare` annotation is a shorthand that shows one block twice: on the left
-highlighted with tree-sitter, on the right as mdBook highlights it with
-highlight.js.
-
-````markdown
-```rust,compare
-fn main() {
-    println!("side by side");
-}
-```
-````
-
-The layout comes from the embedded stylesheet; style the
-`.treesitter-side-by-side`, `.treesitter-pane`, and `.treesitter-pane-label`
-classes to change it.
+Blocks labelled with `pane="…"` are shown side by side, and `compare` shows one
+block as tree-sitter and highlight.js highlight it. See
+[Side-by-side blocks](https://spectralflux.dev/mdbook-tsitter/guide/side-by-side.html).
 
 ### Alongside other preprocessors
 
@@ -227,6 +206,108 @@ and `\` are written as HTML entities, so math preprocessors such as
 mdbook-katex leave the code alone whichever of the two runs first.
 
 <!-- ANCHOR_END: configuration -->
+
+## Side-by-side blocks
+
+<!-- ANCHOR: side-by-side -->
+
+Code blocks can be shown next to each other, each under a title: a change
+before and after, the same idea in several languages, or one block as
+tree-sitter and highlight.js highlight it.
+
+### Panes
+
+Give each block a `pane` annotation holding its title. Blocks with a `pane`
+annotation that follow each other, separated only by blank lines, form one
+group:
+
+````markdown
+```rust,pane="Before"
+let total = a + b;
+```
+
+```rust,pane="After"
+let total = a.saturating_add(b);
+```
+````
+
+The group is shown as equal columns, each under its title, centred above the
+block. On screens narrower than 760 pixels the panes stack instead.
+
+- **Titles.** Quote a title that contains spaces or commas, as in
+  `pane="Before, as written"`; a single word needs no quotes, as in
+  `pane=Before`. A title is plain text, shown exactly as written.
+- **Any number of panes.** A group can hold two blocks or more, each in its
+  own language.
+- **Each pane renders as its block would on its own.** A block in a configured
+  language is highlighted with tree-sitter. A block marked `notreesitter`, in
+  a language that is not configured, or in an editable playground is left to
+  mdBook. Other annotations keep their meaning, so Rust panes keep their Run
+  button and hidden lines.
+- **Ending a group.** Anything other than a blank line between two blocks,
+  such as a paragraph, a heading, or an HTML comment (`<!-- -->`), ends the
+  group, so two groups can follow each other.
+- **Top-level blocks only.** Like highlighting, panes apply to fences at the
+  start of a line. A block inside a list item or a blockquote is left to mdBook
+  as written.
+
+### Comparing with highlight.js
+
+The `compare` annotation shows one block twice: on the left highlighted with
+tree-sitter, on the right as mdBook highlights it with highlight.js.
+
+````markdown
+```rust,compare
+fn main() {
+    println!("side by side");
+}
+```
+````
+
+It is a shorthand for two panes from the same code:
+
+````markdown
+```rust,pane="tree-sitter"
+fn main() {
+    println!("side by side");
+}
+```
+
+```rust,notreesitter,pane="highlight.js"
+fn main() {
+    println!("side by side");
+}
+```
+````
+
+### Styling
+
+A group becomes the following HTML, with the layout in the embedded
+stylesheet:
+
+```html
+<div class="treesitter-side-by-side">
+  <div class="treesitter-pane">
+    <div class="treesitter-pane-label">Before</div>
+    <pre>…</pre>
+  </div>
+  …
+</div>
+```
+
+Rules in `additional-css` override the layout, for example to widen the gap
+between panes or align titles to the left:
+
+```css
+.treesitter-side-by-side { column-gap: 2.5rem; }
+.treesitter-pane-label { text-align: left; }
+```
+
+A `highlight_ts.css` in the theme directory replaces the embedded stylesheet,
+layout included, so a replacement that is started from
+`mdbook-tsitter css` keeps it.
+
+<!-- ANCHOR_END: side-by-side -->
 
 ## Grammar sources
 
@@ -418,10 +499,10 @@ helper captures no longer strip the colour from the nodes they mark.
 <!-- ANCHOR: how-it-works -->
 
 mdBook passes every chapter to the preprocessor as Markdown. `mdbook-tsitter`
-uses the same Markdown parser as mdBook
-([pulldown-cmark](https://docs.rs/pulldown-cmark)), locates top-level fenced code
-blocks for configured languages, and sends their source through
-tree-sitter-highlight.
+parses it with mdBook's own Markdown parser and settings
+([pulldown-cmark](https://docs.rs/pulldown-cmark) with the extensions
+`[output.html]` enables), locates top-level fenced code blocks for configured
+languages, and sends their source through tree-sitter-highlight.
 
 The highlighted events become semantic CSS classes and are spliced back into
 the chapter as ready-made HTML:
@@ -442,6 +523,32 @@ the same rules before highlighting. A runnable Rust block, for example, becomes:
 ```html
 <pre class="treesitter playground"><code class="no-highlight edition2021" data-language="rust">…spans…</code></pre>
 ```
+
+Other preprocessors that run afterwards see highlighted blocks as HTML rather
+than code fences, so `$` and `\` in highlighted code are written as HTML
+entities, which math preprocessors do not read as their syntax.
+
+A group of `pane="…"` blocks becomes a `treesitter-side-by-side` element with
+one `treesitter-pane` per block. A pane holding a block left to mdBook keeps
+its fence, separated from the surrounding HTML by blank lines so mdBook still
+renders it as Markdown:
+
+```html
+<div class="treesitter-side-by-side">
+<div class="treesitter-pane">
+<div class="treesitter-pane-label">Before</div>
+
+<pre class="treesitter">…</pre>
+
+</div>
+…
+</div>
+```
+
+Finally, every chapter with a highlighted block gets the highlighting
+stylesheet as a `<style>` element in the `mdbook-tsitter` cascade layer: the
+theme directory's `highlight_ts.css`, or else the bundled stylesheet, with any
+colours carried over from highlight.js stylesheets the theme replaces.
 
 <!-- ANCHOR_END: how-it-works -->
 

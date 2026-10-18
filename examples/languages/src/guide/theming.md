@@ -27,9 +27,9 @@ Since this one replaces mdBook's template, refresh it from
 
 [`theme/everforest.css`](https://github.com/AlexanderGolys/mdbook-tsitter/blob/main/examples/languages/theme/everforest.css)
 sets mdBook's interface variables, the same ones the built-in themes set in
-`css/variables.css`, and the highlighting colours. For highlighting it is
-enough to set the hues; this theme also maps a few roles to Everforest's own
-choices:
+`css/variables.css`, and the highlighting colours: Everforest's palette as the
+hues, and every colour role mapped to the hue Everforest gives that kind of
+syntax, so none of the bundled stylesheet's choices remain:
 
 ```css
 .everforest {
@@ -37,7 +37,10 @@ choices:
 }
 ```
 
-The same file styles highlight.js classes in the same roles, so blocks left to
+Beyond the roles, every tree-sitter capture is styled as Everforest's Neovim
+colour scheme highlights it: each `@capture` group's colour, italic, bold, and
+underline, such as italic comments, bold headings, and underlined URLs. The
+same file styles highlight.js classes in the same roles, so blocks left to
 mdBook match the tree-sitter ones.
 
 ### Code editors

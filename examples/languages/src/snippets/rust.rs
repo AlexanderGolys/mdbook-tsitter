@@ -1,6 +1,8 @@
+//! A Rust example of a language that uses the tree-sitter-highlight preprocessor.
 use dashmap::DashMap;
 use lsp_types::{Location, Range, Url};
 use std::{path::PathBuf, sync::{Arc, RwLock}};
+
 
 #[derive(Debug, Clone)]
 struct DefSite {
@@ -8,13 +10,29 @@ struct DefSite {
     range: Range,
     kind: TokenKind,
 }
+/// A symbol name.
+/// # Examples
+/// ```
+/// use treesitter_highlight::{Symbol, Symbol::new};
+/// let symbol = new("foo");
+/// assert_eq!(symbol.name(), "foo");
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Symbol(String);
 
+impl Symbol {
+    pub fn new(name: &str) -> Self {
+        Self(name.to_string())
+    }
+
+    pub fn name(&self) -> &str {
+        &self.0
+    }
+}
 trait DefLookup {
-    fn find(&self, name: &str, skip: &Url)
-        -> Vec<Location>;
-    fn has(&self, name: &str) -> bool;
-    fn kind(&self, name: &str, skip: &Url)
-        -> Option<TokenKind>;
+    fn find(&self, name: &str, skip: &Url) -> Vec<Location>;
+    fn has(&self, name: &str) -> bool; // Comment
+    fn kind(&self, name: &str, skip: &Url) -> Option<TokenKind>;
 }
 
 impl<T: DefLookup + ?Sized> DefLookup for Arc<T> {

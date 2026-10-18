@@ -7,6 +7,8 @@
 - [Configuring languages](./guide/configuration.md)
 - [Grammar sources](./guide/grammar-sources.md)
 - [Theming](./guide/theming.md)
+- [Interactive blocks](./examples/interactive.md)
+- [Side-by-side blocks](./guide/side-by-side.md)
 - [Upgrading from 2.x](./guide/upgrading.md)
 - [How it works](./guide/how-it-works.md)
 
@@ -26,7 +28,6 @@
   - [PHP](./examples/php.md)
   - [Go](./examples/go.md)
   - [JavaScript](./examples/javascript.md)
-- [Interactive blocks](./examples/interactive.md)
 
 # Project
 
