@@ -1,7 +1,7 @@
 //! The built-in list of known grammar repositories, so a language from it
 //! needs no source in `book.toml`. The list is `assets/grammars.json`,
 //! generated from nvim-treesitter's parser list by
-//! `scripts/update-grammar-list.sh`; every entry is pinned to a revision.
+//! `scripts/update-grammar-list.lua`; every entry is pinned to a revision.
 //! It also names nvim-treesitter's queries for exactly those revisions, which
 //! known grammars use in preference to their repositories' own.
 

@@ -7,6 +7,10 @@ src = "src"
 # root README.md / CONTRIBUTING.md) is highlighted too.
 [preprocessor.tsitter]
 after = ["links"]
+# This book documents the preprocessor in this repository, so it runs it from
+# source; mdBook starts the command in the book's directory, without a shell.
+# A book using the published crate needs no `command`.
+command = "cargo run --quiet --manifest-path ../../Cargo.toml --"
 # inject = true        # (default) highlight languages embedded via injections
 # default-css = true   # (default) embed the bundled stylesheet
 

@@ -567,18 +567,18 @@ with the real mdBook and checks that every highlighted block has the same
 structure as mdBook's own rendering of it: classes, hidden lines, and the text
 the Run and Copy buttons use.
 
-Build the documentation book, which fetches its grammars on the first build:
+Build the documentation book, which runs the preprocessor from this checkout
+through `cargo run` and fetches its grammars on the first build:
 
 ```sh
-cargo build
-PATH="$PWD/target/debug:$PATH" mdbook build examples/languages
+mdbook build examples/languages
 ```
 
 Refresh the built-in grammar list from nvim-treesitter's current parser list
-(needs `git`, `curl`, and a Lua interpreter):
+with any Lua interpreter, such as `lua` or `nvim -l` (needs `git` and `curl`):
 
 ```sh
-./scripts/update-grammar-list.sh
+lua scripts/update-grammar-list.lua
 ```
 
 <!-- ANCHOR_END: development -->

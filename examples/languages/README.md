@@ -23,7 +23,9 @@ and compiled on the first build and cached afterwards.
 `everforest.js` define it) and `comparison.css`, which widens the language
 chapters' side-by-side blocks.
 
+The book runs the preprocessor from this repository through `cargo run`, so
+building it needs only Rust and mdBook:
+
 ```sh
-cargo build
-PATH="$PWD/../../target/debug:$PATH" mdbook build
+mdbook build
 ```

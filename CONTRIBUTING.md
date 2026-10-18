@@ -19,11 +19,12 @@ done. Public items carry doc comments.
 
 The book under [`examples/languages`](examples/languages) is the documentation
 site, and doubles as a usage example and an integration test across several
-grammars. Its grammars are fetched on the first build and cached afterwards:
+grammars. It runs the preprocessor from this checkout through `cargo run`, so
+`mdbook serve` shows changes to the code too. Its grammars are fetched on the
+first build and cached afterwards:
 
 ```sh
-cargo build
-PATH="$PWD/target/debug:$PATH" mdbook build examples/languages
+mdbook build examples/languages
 ```
 
 The user guide chapters include sections of the root `README.md` through
@@ -32,10 +33,12 @@ The user guide chapters include sections of the root `README.md` through
 ## Built-in grammar list
 
 `assets/grammars.json` lists where known grammars live, pinned to the
-revisions nvim-treesitter tests. It is generated, never edited by hand:
+revisions nvim-treesitter tests. It is generated, never edited by hand, by a
+Lua script that runs with `lua` or `nvim -l` on any platform and needs `git`
+and `curl` on `PATH`:
 
 ```sh
-./scripts/update-grammar-list.sh
+lua scripts/update-grammar-list.lua
 ```
 
 After refreshing it, build a book using a broad set of languages to check that
