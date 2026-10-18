@@ -7,9 +7,8 @@ use std::process;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use mdbook_preprocessor::{self, Preprocessor, MDBOOK_VERSION};
+use mdbook_preprocessor::{self, Preprocessor};
 use mdbook_tsitter::{TreeSitterPreprocessor, DEFAULT_CSS};
-use semver::{Version, VersionReq};
 
 #[derive(Parser)]
 #[command(about = "An mdBook preprocessor for tree-sitter syntax highlighting")]
@@ -54,16 +53,6 @@ fn main() -> Result<()> {
 fn preprocess(preprocessor: &dyn Preprocessor) -> Result<()> {
     let (ctx, book) = mdbook_preprocessor::parse_input(io::stdin())
         .context("parsing preprocessor input from stdin")?;
-
-    let book_version = Version::parse(&ctx.mdbook_version).context("parsing mdBook version")?;
-    let supported =
-        VersionReq::parse(MDBOOK_VERSION).context("parsing supported mdBook version")?;
-    if !supported.matches(&book_version) {
-        eprintln!(
-            "mdbook-tsitter: built against mdBook {MDBOOK_VERSION}, running under {} — continuing",
-            ctx.mdbook_version,
-        );
-    }
 
     let processed = preprocessor.run(&ctx, book)?;
     serde_json::to_writer(io::stdout(), &processed).context("writing processed book to stdout")?;
