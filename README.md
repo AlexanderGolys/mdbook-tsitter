@@ -49,8 +49,8 @@ language of your own.
   finds them, and highlighted code stays out of reach of math preprocessors.
 
 The [documentation book](https://spectralflux.dev/mdbook-tsitter) is built with
-the preprocessor itself. Its examples include a custom Macaulay2 grammar and
-substantial side-by-side comparisons in Rust, Python, TypeScript, JavaScript,
+the preprocessor itself. Its examples include Macaulay2, a grammar outside
+nvim-treesitter's list, and substantial side-by-side comparisons in Rust, Python, TypeScript, JavaScript,
 Go, Java, C, C++, Bash, PHP, Lua, and Haskell, and its
 [`book.toml`](examples/languages/book.toml) is a complete configuration
 example.
@@ -317,8 +317,10 @@ layout included, so a replacement that is started from
 
 The preprocessor knows the repositories of the
 [grammars nvim-treesitter supports](https://github.com/nvim-treesitter/nvim-treesitter/blob/main/SUPPORTED_LANGUAGES.md),
-each pinned to the revision nvim-treesitter tests. Use the language's name
-there as its entry; `-` and `_` are interchangeable (`c-sharp` or `c_sharp`).
+each pinned to the revision nvim-treesitter tests, and of a few grammars
+nvim-treesitter does not list, such as `macaulay2`, each pinned to a release.
+Use the language's name there as its entry; `-` and `_` are interchangeable
+(`c-sharp` or `c_sharp`).
 A mistyped name fails with a suggestion when a listed name is close.
 
 Their queries are nvim-treesitter's for the pinned revision, with the queries
@@ -575,10 +577,10 @@ mdbook build examples/languages
 ```
 
 Refresh the built-in grammar list from nvim-treesitter's current parser list
-with any Lua interpreter, such as `lua` or `nvim -l` (needs `git` and `curl`):
+(needs `git`):
 
 ```sh
-lua scripts/update-grammar-list.lua
+cargo xtask update-grammar-list
 ```
 
 <!-- ANCHOR_END: development -->

@@ -31,12 +31,7 @@ lua = {}
 haskell = {}
 markdown = { aliases = ["markdown", "md"] }
 toml = {}
-
-# Any other grammar is named by its repository, pinned with `rev`.
-[preprocessor.tsitter.languages.macaulay2]
-git = "https://github.com/AlexanderGolys/tree-sitter-macaulay2"
-rev = "v6.2.0"
-aliases = ["macaulay2", "m2"]
+macaulay2 = { aliases = ["macaulay2", "m2"] }
 
 [rust]
 edition = "2021"

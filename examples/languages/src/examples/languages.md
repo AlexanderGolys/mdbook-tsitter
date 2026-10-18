@@ -5,9 +5,9 @@ the left as `mdbook-tsitter` highlights it with tree-sitter, on the right as
 mdBook highlights it with highlight.js. Macaulay2 has a single tree-sitter
 example, as highlight.js does not know the language.
 
-Every language here except Macaulay2 comes from the built-in grammar list and
-is configured by name alone. Macaulay2 uses a custom grammar, named by its
-repository and pinned to a release. This is the book's complete configuration:
+Every language here comes from the built-in grammar list and is configured by
+name alone, Macaulay2 included: its grammar is not in nvim-treesitter's list,
+so the built-in list adds it. This is the book's complete configuration:
 
 ```toml
 {{#include ../../book.toml}}

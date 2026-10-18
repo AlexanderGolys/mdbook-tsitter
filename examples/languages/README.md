@@ -14,9 +14,9 @@ Its sections are:
 - **Project**: the root [`CONTRIBUTING.md`](../../CONTRIBUTING.md) and the
   README's development notes.
 
-[`book.toml`](book.toml) is a complete configuration example: languages from the
-built-in list by name, and a custom grammar by repository. Grammars are fetched
-and compiled on the first build and cached afterwards.
+[`book.toml`](book.toml) is a complete configuration example, with every
+language from the built-in list by name. Grammars are fetched and compiled on
+the first build and cached afterwards.
 
 [`theme/`](theme) holds the book's own styling: the Everforest theme
 (`index.hbs` adds it to mdBook's theme picker, `everforest.css` and

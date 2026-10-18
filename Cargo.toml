@@ -9,9 +9,12 @@ homepage = "https://spectralflux.dev/mdbook-tsitter"
 keywords = ["mdbook", "tree-sitter", "syntax-highlighting", "preprocessor"]
 categories = ["command-line-utilities", "text-processing"]
 readme = "README.md"
-# Keep example/test books out of the published package — they need external
-# parser binaries and queries and only make sense from the git repo.
-exclude = ["/examples", "/docs", "/scripts"]
+# Keep example/test books and repository tooling out of the published
+# package — they only make sense from the git repo.
+exclude = ["/examples", "/docs", "/xtask", "/.cargo"]
+
+[workspace]
+members = ["xtask"]
 
 [[bin]]
 name = "mdbook-tsitter"

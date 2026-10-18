@@ -34,12 +34,20 @@ The user guide chapters include sections of the root `README.md` through
 
 `assets/grammars.json` lists where known grammars live, pinned to the
 revisions nvim-treesitter tests. It is generated, never edited by hand, by a
-Lua script that runs with `lua` or `nvim -l` on any platform and needs `git`
-and `curl` on `PATH`:
+task that runs on any platform and needs only Cargo and `git`:
 
 ```sh
-lua scripts/update-grammar-list.lua
+cargo xtask update-grammar-list
 ```
+
+It reads nvim-treesitter's parser list at the tip of its main branch; pass a
+commit (`cargo xtask update-grammar-list <commit>`) to read it there instead.
+
+Grammars nvim-treesitter does not list, such as Macaulay2's, go in
+`assets/additional-grammars.json`, which is edited by hand. Each entry names a
+language and gives its repository `url`, the commit to pin as `revision`, and
+the grammar's subdirectory as `location` when the repository has several. A
+name cannot be in both lists.
 
 After refreshing it, build a book using a broad set of languages to check that
 every grammar still fetches, compiles, and has valid queries.
@@ -49,8 +57,9 @@ every grammar still fetches, compiles, and has valid queries.
 The package stays language-agnostic: please do not add grammars or
 language-specific behaviour to the crate itself. Behaviour for a class of
 grammars belongs in generic handling (the grammar manifest, query
-normalisation), and new languages belong in a book's configuration or, when
-nvim-treesitter supports them, in a refreshed grammar list.
+normalisation), and new languages belong in a book's configuration, in a
+refreshed grammar list when nvim-treesitter supports them, or otherwise in
+`assets/additional-grammars.json`.
 
 ## Pull requests
 

@@ -1,9 +1,11 @@
 //! The built-in list of known grammar repositories, so a language from it
 //! needs no source in `book.toml`. The list is `assets/grammars.json`,
 //! generated from nvim-treesitter's parser list by
-//! `scripts/update-grammar-list.lua`; every entry is pinned to a revision.
-//! It also names nvim-treesitter's queries for exactly those revisions, which
-//! known grammars use in preference to their repositories' own.
+//! `cargo xtask update-grammar-list`, together with
+//! `assets/additional-grammars.json`, which lists grammars nvim-treesitter
+//! does not; every entry is pinned to a revision. It also names
+//! nvim-treesitter's queries for exactly those revisions, which known
+//! grammars use in preference to their repositories' own.
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -12,6 +14,9 @@ use serde::Deserialize;
 
 /// The embedded grammar list.
 const GRAMMAR_LIST: &str = include_str!("../assets/grammars.json");
+
+/// The embedded grammars nvim-treesitter's list does not include, by name.
+const ADDITIONAL_GRAMMARS: &str = include_str!("../assets/additional-grammars.json");
 
 /// Where a known grammar lives.
 #[derive(Debug, Deserialize)]
@@ -44,7 +49,16 @@ struct GrammarList {
 
 fn list() -> &'static GrammarList {
     static LIST: OnceLock<GrammarList> = OnceLock::new();
-    LIST.get_or_init(|| serde_json::from_str(GRAMMAR_LIST).expect("assets/grammars.json is valid"))
+    LIST.get_or_init(|| {
+        let mut list: GrammarList =
+            serde_json::from_str(GRAMMAR_LIST).expect("assets/grammars.json is valid");
+        list.grammars.extend(additional_grammars());
+        list
+    })
+}
+
+fn additional_grammars() -> HashMap<String, KnownGrammar> {
+    serde_json::from_str(ADDITIONAL_GRAMMARS).expect("assets/additional-grammars.json is valid")
 }
 
 fn grammars() -> &'static HashMap<String, KnownGrammar> {
@@ -97,6 +111,18 @@ mod tests {
                 grammar.url
             );
             assert!(!grammar.revision.is_empty(), "{name} has no revision");
+        }
+    }
+
+    #[test]
+    fn additional_grammars_are_not_in_nvim_treesitters_list() {
+        let nvim_treesitter: GrammarList = serde_json::from_str(GRAMMAR_LIST).unwrap();
+        for name in additional_grammars().keys() {
+            assert!(
+                !nvim_treesitter.grammars.contains_key(name),
+                "{name} is in assets/grammars.json; remove it from assets/additional-grammars.json"
+            );
+            assert!(lookup(name).is_some(), "{name} is not looked up");
         }
     }
 
