@@ -1,0 +1,148 @@
+/* Everforest (dark, medium contrast) as an extra mdBook theme. mdBook sets the
+   active theme as a class on <html>; `index.hbs` adds it to the theme picker.
+   Palette: https://github.com/sainnhe/everforest */
+
+.everforest {
+    --bg: #2d353b;
+    --fg: #d3c6aa;
+
+    --sidebar-bg: #232a2e;
+    --sidebar-fg: #d3c6aa;
+    --sidebar-non-existant: #7a8478;
+    --sidebar-active: #a7c080;
+    --sidebar-spacer: #3d484d;
+
+    --scrollbar: var(--sidebar-fg);
+
+    --icons: #7a8478;
+    --icons-hover: #d3c6aa;
+
+    --links: #7fbbb3;
+
+    --inline-code-color: #83c092;
+
+    --theme-popup-bg: #343f44;
+    --theme-popup-border: #4f585e;
+    --theme-hover: #3d484d;
+
+    --quote-bg: #343f44;
+    --quote-border: #475258;
+
+    --warning-border: #e69875;
+
+    --table-border-color: #3d484d;
+    --table-header-bg: #475258;
+    --table-alternate-bg: #343f44;
+
+    --searchbar-border-color: #4f585e;
+    --searchbar-bg: #343f44;
+    --searchbar-fg: #d3c6aa;
+    --searchbar-shadow-color: #232a2e;
+    --searchresults-header-fg: #859289;
+    --searchresults-border-color: #4f585e;
+    --searchresults-li-bg: #343f44;
+    --search-mark-bg: #4d4c43;
+
+    --color-scheme: dark;
+
+    /* Same as `--icons` */
+    --copy-button-filter: invert(52%) sepia(14%) saturate(239%) hue-rotate(65deg) brightness(95%) contrast(91%);
+    /* Same as `--sidebar-active` */
+    --copy-button-filter-hover: invert(91%) sepia(8%) saturate(1483%) hue-rotate(33deg) brightness(82%) contrast(88%);
+
+    --footnote-highlight: #7fbbb3;
+
+    --overlay-bg: rgba(35, 42, 46, 0.4);
+
+    --blockquote-note-color: #7fbbb3;
+    --blockquote-tip-color: #a7c080;
+    --blockquote-important-color: #d699b6;
+    --blockquote-warning-color: #dbbc7f;
+    --blockquote-caution-color: #e67e80;
+
+    --sidebar-header-border-color: #a7c080;
+
+    /* ANCHOR: highlighting */
+    /* Tree-sitter hues; every capture rule picks these up. */
+    --ts-red:    #e67e80;
+    --ts-orange: #e69875;
+    --ts-yellow: #dbbc7f;
+    --ts-green:  #a7c080;
+    --ts-cyan:   #83c092;
+    --ts-blue:   #7fbbb3;
+    --ts-purple: #d699b6;
+    --ts-gray:   #859289;
+
+    /* Roles that Everforest colours differently from the bundled theme. */
+    --ts-keyword:     var(--ts-red);
+    --ts-string:      var(--ts-cyan);
+    --ts-escape:      var(--ts-green);
+    --ts-number:      var(--ts-purple);
+    --ts-function:    var(--ts-green);
+    --ts-declaration: var(--ts-blue);
+    --ts-special:     var(--ts-orange);
+    /* ANCHOR_END: highlighting */
+}
+
+/* Code blocks, and highlight.js blocks in the same roles, so blocks left to
+   mdBook match the tree-sitter ones. mdBook keeps its light highlight.js
+   stylesheet active for themes it does not know; these rules cover its
+   selectors. */
+.everforest .hljs {
+    background: #232a2e;
+    color: var(--fg);
+}
+
+.everforest .hljs-comment,
+.everforest .hljs-quote {
+    color: var(--ts-comment);
+}
+
+.everforest .hljs-variable,
+.everforest .hljs-template-variable,
+.everforest .hljs-attribute,
+.everforest .hljs-attr,
+.everforest .hljs-tag,
+.everforest .hljs-name,
+.everforest .hljs-regexp,
+.everforest .hljs-link,
+.everforest .hljs-selector-id,
+.everforest .hljs-selector-class {
+    color: var(--ts-special);
+}
+
+.everforest .hljs-number,
+.everforest .hljs-meta,
+.everforest .hljs-built_in,
+.everforest .hljs-builtin-name,
+.everforest .hljs-literal,
+.everforest .hljs-type,
+.everforest .hljs-params {
+    color: var(--ts-number);
+}
+
+.everforest .hljs-string,
+.everforest .hljs-symbol,
+.everforest .hljs-bullet {
+    color: var(--ts-string);
+}
+
+.everforest .hljs-title,
+.everforest .hljs-section {
+    color: var(--ts-function);
+}
+
+.everforest .hljs-keyword,
+.everforest .hljs-selector-tag {
+    color: var(--ts-keyword);
+}
+
+.everforest .hljs-addition {
+    color: var(--ts-green);
+    background-color: #425047;
+}
+
+.everforest .hljs-deletion {
+    color: var(--ts-red);
+    background-color: #514045;
+}

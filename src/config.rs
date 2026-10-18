@@ -47,10 +47,10 @@ pub struct Config {
     /// `inject = false` to switch injection off entirely, e.g. if an injected
     /// grammar misbehaves.
     pub inject: bool,
-    /// Whether the bundled stylesheet is embedded in every chapter with a
-    /// highlighted block. It sits in a cascade layer, so any `additional-css`
-    /// rule overrides it; set `default-css = false` only to drop it entirely,
-    /// e.g. for a stylesheet that replaces it.
+    /// Whether the highlighting stylesheet is embedded in every chapter with a
+    /// highlighted block: `highlight_ts.css` from the theme directory, or else
+    /// the bundled one. It sits in a cascade layer, so any `additional-css`
+    /// rule overrides it; set `default-css = false` only to drop it entirely.
     #[serde(rename = "default-css")]
     pub default_css: bool,
 }

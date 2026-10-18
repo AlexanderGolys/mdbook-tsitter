@@ -3,27 +3,10 @@
 Discriminated unions, generic interfaces, private fields, async generators,
 type narrowing, and `satisfies`.
 
-<div class="highlight-comparison-key">
-  <strong>mdBook</strong>
-  <strong>tree-sitter</strong>
-</div>
-
-<div class="highlight-comparison">
-
-<div class="highlight-comparison-pane">
-
-```typescript,notreesitter
+```typescript,pane="tree-sitter"
 {{#include ../snippets/typescript.ts}}
 ```
 
-</div>
-
-<div class="highlight-comparison-pane">
-
-```typescript
+```typescript,notreesitter,pane="highlight.js"
 {{#include ../snippets/typescript.ts}}
 ```
-
-</div>
-
-</div>

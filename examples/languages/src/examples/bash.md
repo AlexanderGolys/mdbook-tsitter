@@ -3,27 +3,10 @@
 Strict mode, arrays, associative maps, traps, process substitution, pattern
 matching, parameter expansion, and quoting.
 
-<div class="highlight-comparison-key">
-  <strong>mdBook</strong>
-  <strong>tree-sitter</strong>
-</div>
-
-<div class="highlight-comparison">
-
-<div class="highlight-comparison-pane">
-
-```bash,notreesitter
+```bash,pane="tree-sitter"
 {{#include ../snippets/bash.sh}}
 ```
 
-</div>
-
-<div class="highlight-comparison-pane">
-
-```bash
+```bash,notreesitter,pane="highlight.js"
 {{#include ../snippets/bash.sh}}
 ```
-
-</div>
-
-</div>

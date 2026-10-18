@@ -3,27 +3,10 @@
 Type constraints, generic interfaces, goroutines, channels, `select`,
 contexts, and error handling.
 
-<div class="highlight-comparison-key">
-  <strong>mdBook</strong>
-  <strong>tree-sitter</strong>
-</div>
-
-<div class="highlight-comparison">
-
-<div class="highlight-comparison-pane">
-
-```go,notreesitter
+```go,pane="tree-sitter"
 {{#include ../snippets/go.go}}
 ```
 
-</div>
-
-<div class="highlight-comparison-pane">
-
-```go
+```go,notreesitter,pane="highlight.js"
 {{#include ../snippets/go.go}}
 ```
-
-</div>
-
-</div>

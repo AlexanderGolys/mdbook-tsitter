@@ -1,6 +1,6 @@
 [package]
 name = "mdbook-tsitter"
-version = "3.0.1"
+version = "3.1.0"
 edition = "2021"
 description = "An mdBook preprocessor that highlights fenced code blocks with tree-sitter, for any language with a tree-sitter grammar."
 license = "MIT OR Apache-2.0"
@@ -19,7 +19,7 @@ path = "src/main.rs"
 
 [dependencies]
 mdbook-preprocessor = "0.5"
-pulldown-cmark = { version = "0.12", default-features = false }
+mdbook-markdown = "0.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"

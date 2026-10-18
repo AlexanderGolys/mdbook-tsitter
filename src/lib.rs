@@ -15,8 +15,10 @@ pub mod markdown;
 pub mod native;
 pub mod predicates;
 pub mod render;
+pub mod theme;
 
 use mdbook_preprocessor::book::{Book, BookItem};
+use mdbook_preprocessor::config::HtmlConfig;
 use mdbook_preprocessor::errors::Result;
 use mdbook_preprocessor::{Preprocessor, PreprocessorContext};
 
@@ -35,27 +37,26 @@ const DEFAULT_CSS_SIGNATURE: &str = "Default theme for mdbook-treesitter";
 /// even though the embedded copy comes later in the page.
 const CSS_LAYER: &str = "mdbook-tsitter";
 
-/// [`DEFAULT_CSS`] as a raw HTML block appended to a chapter. A `<style>`
-/// block runs to its closing tag, so blank lines inside the CSS are kept.
-fn embedded_stylesheet() -> String {
-    format!("\n\n<style>\n@layer {CSS_LAYER} {{\n{DEFAULT_CSS}}}\n</style>\n")
+/// A stylesheet as a raw HTML block appended to a chapter. A `<style>` block
+/// runs to its closing tag, so blank lines inside the CSS are kept.
+fn embedded_stylesheet(css: &str) -> String {
+    format!("\n\n<style>\n@layer {CSS_LAYER} {{\n{css}}}\n</style>\n")
 }
 
 /// Warn about copies of the bundled stylesheet in `additional-css`: books set
 /// up before it was embedded had to add one, which is now redundant.
-fn warn_about_copied_stylesheets(ctx: &PreprocessorContext) {
-    let Some(html) = ctx.config.html_config() else {
-        return;
-    };
-    for stylesheet in html.additional_css {
-        let is_copy = std::fs::read_to_string(ctx.root.join(&stylesheet))
+fn warn_about_copied_stylesheets(root: &std::path::Path, html: &HtmlConfig) {
+    for stylesheet in &html.additional_css {
+        let is_copy = std::fs::read_to_string(root.join(stylesheet))
             .is_ok_and(|css| css.contains(DEFAULT_CSS_SIGNATURE));
         if is_copy {
             warn(&format!(
                 "`{}` in `additional-css` is a copy of the bundled stylesheet, which is now \
                  embedded automatically; adding it is deprecated. Remove it, keep only your own \
-                 changes in it, or set `default-css = false` if it replaces the bundled theme",
-                stylesheet.display()
+                 changes in it, or move it to `{}` in the theme directory if it replaces the \
+                 bundled theme",
+                stylesheet.display(),
+                theme::THEME_STYLESHEET,
             ));
         }
     }
@@ -78,14 +79,21 @@ impl Preprocessor for TreeSitterPreprocessor {
         let config = Config::from_context(ctx)?;
         let registry = Registry::build(&ctx.root, &config)?;
         let native = NativeFeatures::from_book(&ctx.config)?;
-        let embedded_css = config.default_css.then(embedded_stylesheet);
-        if config.default_css {
-            warn_about_copied_stylesheets(ctx);
-        }
+        let html = ctx.config.html_config().unwrap_or_default();
+        let markdown_options = markdown::mdbook_markdown_options(&html);
+        let embedded_css = if config.default_css {
+            warn_about_copied_stylesheets(&ctx.root, &html);
+            Some(embedded_stylesheet(&theme::stylesheet(
+                &html.theme_dir(&ctx.root),
+            )?))
+        } else {
+            None
+        };
 
         book.for_each_mut(|item| {
             if let BookItem::Chapter(chapter) = item {
-                let rewritten = markdown::rewrite(&chapter.content, &registry, &native);
+                let rewritten =
+                    markdown::rewrite(&chapter.content, &markdown_options, &registry, &native);
                 let highlighted = rewritten != chapter.content;
                 chapter.content = rewritten;
                 if let Some(css) = embedded_css.as_deref().filter(|_| highlighted) {

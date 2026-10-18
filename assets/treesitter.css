@@ -156,3 +156,34 @@ pre.treesitter > code {
 .ts-tag { color: var(--ts-special); }
 .ts-attribute { color: var(--ts-attribute); }
 .ts-label { color: var(--ts-namespace); }
+
+/* ---- Side-by-side panes (```lang,pane="…" and ```lang,compare) --------- */
+/* Panes side by side, the same height, stacked on narrow screens. */
+.treesitter-side-by-side {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  column-gap: 1.5rem;
+}
+.treesitter-pane {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.treesitter-pane-label {
+  margin-bottom: 0.4rem;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+.treesitter-pane > pre {
+  box-sizing: border-box;
+  width: 100%;
+  flex: 1;
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .treesitter-side-by-side {
+    grid-auto-flow: row;
+    row-gap: 1.5rem;
+  }
+}

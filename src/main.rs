@@ -25,8 +25,7 @@ enum Command {
         renderer: String,
     },
     /// Print the default theme to stdout as a starting point for a custom one,
-    /// e.g. `mdbook-tsitter css > theme/treesitter.css`, referenced from
-    /// `[output.html] additional-css` with `default-css = false`.
+    /// e.g. `mdbook-tsitter css > theme/highlight_ts.css`, which replaces it.
     Css,
 }
 

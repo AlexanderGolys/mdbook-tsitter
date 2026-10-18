@@ -3,27 +3,10 @@
 Algebraic data types, type classes, constrained polymorphism, higher-order
 folds, pattern matching, comprehensions, and concurrent traversal.
 
-<div class="highlight-comparison-key">
-  <strong>mdBook</strong>
-  <strong>tree-sitter</strong>
-</div>
-
-<div class="highlight-comparison">
-
-<div class="highlight-comparison-pane">
-
-```haskell,notreesitter
+```haskell,pane="tree-sitter"
 {{#include ../snippets/haskell.hs}}
 ```
 
-</div>
-
-<div class="highlight-comparison-pane">
-
-```haskell
+```haskell,notreesitter,pane="highlight.js"
 {{#include ../snippets/haskell.hs}}
 ```
-
-</div>
-
-</div>

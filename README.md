@@ -108,7 +108,7 @@ Everything lives under `[preprocessor.tsitter]`.
 | key      | default | meaning |
 | -------- | ------- | ------- |
 | `inject` | `true`  | Highlight embedded languages using configured injection queries. Only configured languages are used. Set this to `false` to disable injections globally. |
-| `default-css` | `true` | Embed the bundled stylesheet in chapters with highlighted blocks. See [Theming](https://spectralflux.dev/mdbook-tsitter/guide/theming.html). |
+| `default-css` | `true` | Embed the highlighting stylesheet (the theme directory's `highlight_ts.css`, or the bundled one) in chapters with highlighted blocks. See [Theming](https://spectralflux.dev/mdbook-tsitter/guide/theming.html). |
 
 ### Language options
 
@@ -174,6 +174,57 @@ highlighting instead:
 let highlighted = "by mdBook";
 ```
 ````
+
+### Side-by-side blocks
+
+Label consecutive blocks with `pane="…"` to show them side by side, each under
+its label. Only blank lines may separate the blocks of one group, and the panes
+stack on narrow screens. Each pane is rendered as it would be on its own, so a
+pane can be left to mdBook with `notreesitter` or be in a language that is not
+configured:
+
+````markdown
+```rust,pane="Before"
+let total = a + b;
+```
+
+```rust,pane="After"
+let total = a.saturating_add(b);
+```
+````
+
+The `compare` annotation is a shorthand that shows one block twice: on the left
+highlighted with tree-sitter, on the right as mdBook highlights it with
+highlight.js.
+
+````markdown
+```rust,compare
+fn main() {
+    println!("side by side");
+}
+```
+````
+
+The layout comes from the embedded stylesheet; style the
+`.treesitter-side-by-side`, `.treesitter-pane`, and `.treesitter-pane-label`
+classes to change it.
+
+### Alongside other preprocessors
+
+mdBook runs preprocessors in the order set by their `before` and `after` keys,
+and otherwise alphabetically by name. A highlighted block becomes HTML, so a
+preprocessor that generates code blocks, or that must see a block as a code
+fence, has to run before this one:
+
+```toml
+[preprocessor.tsitter]
+after = ["links", "my-code-generator"]
+```
+
+Blocks are found with mdBook's own Markdown settings, so a block is highlighted
+exactly when mdBook would render it as a code block. In highlighted code, `$`
+and `\` are written as HTML entities, so math preprocessors such as
+mdbook-katex leave the code alone whichever of the two runs first.
 
 <!-- ANCHOR_END: configuration -->
 
@@ -283,17 +334,27 @@ code[data-language="rust"] .ts-function-macro {
 Each highlighted block carries its fence tag as `data-language`, so a
 `code[data-language="…"]` selector scopes a rule to one language.
 
-To replace the theme entirely, start from the bundled stylesheet, reference it
-from `additional-css`, and turn the embedded copy off:
+### Theme directory
+
+Like mdBook's own [theme files](https://rust-lang.github.io/mdBook/format/theme/index.html),
+the highlighting stylesheet can be replaced from the book's theme directory
+(`theme/`, or `[output.html] theme`). A `highlight_ts.css` there is embedded
+instead of the bundled stylesheet, as mdBook uses a `highlight.css` there
+instead of its highlight.js theme. Start from the bundled one:
 
 ```sh
-mdbook-tsitter css > theme/treesitter.css
+mdbook-tsitter css > theme/highlight_ts.css
 ```
 
-```toml
-[preprocessor.tsitter]
-default-css = false
-```
+Without a `highlight_ts.css`, a theme that only replaces mdBook's highlight.js
+stylesheets still colours tree-sitter blocks: the bundled stylesheet takes each
+role's colour from the matching highlight.js class (`.hljs-keyword` for
+keywords, `.hljs-string` for strings, and so on). A replaced `highlight.css`
+applies to the light, rust, and custom themes, `tomorrow-night.css` to coal and
+navy, and `ayu-highlight.css` to ayu, as in mdBook.
+
+Set `default-css = false` under `[preprocessor.tsitter]` to embed no
+highlighting stylesheet at all.
 
 There is no fixed capture list in the preprocessor. Capture names come directly
 from each grammar's queries; names beginning with `_` are treated as internal
@@ -315,7 +376,8 @@ next major release.
   fetched instead. Any other grammar is named by `git`, its repository URL or a
   path to a local checkout.
 - **A copy of the bundled stylesheet in `additional-css`.** The stylesheet is
-  now embedded, so remove the copy, or keep only your own changes in it.
+  now embedded, so remove the copy, or keep only your own changes in it. A
+  copy that replaces the bundled theme moves to `theme/highlight_ts.css`.
 
 A 2.x configuration such as
 

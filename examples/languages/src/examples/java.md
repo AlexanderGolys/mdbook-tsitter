@@ -3,27 +3,10 @@
 Sealed interfaces, records, validation, streams, guarded pattern matching,
 switch expressions, and virtual threads.
 
-<div class="highlight-comparison-key">
-  <strong>mdBook</strong>
-  <strong>tree-sitter</strong>
-</div>
-
-<div class="highlight-comparison">
-
-<div class="highlight-comparison-pane">
-
-```java,notreesitter
+```java,pane="tree-sitter"
 {{#include ../snippets/java.java}}
 ```
 
-</div>
-
-<div class="highlight-comparison-pane">
-
-```java
+```java,notreesitter,pane="highlight.js"
 {{#include ../snippets/java.java}}
 ```
-
-</div>
-
-</div>

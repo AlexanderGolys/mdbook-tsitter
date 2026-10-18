@@ -1,63 +1,20 @@
-/* The comparison chapters render identical source as a pair. Their grids widen
-   beyond mdBook's prose column on large screens, where real-world code benefits
-   from the extra room, then returns to the normal flow on smaller screens. */
-.highlight-comparison-key,
-.highlight-comparison {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+/* The comparison chapters render real-world code side by side. On large
+   screens their panes widen beyond mdBook's prose column, then return to the
+   normal flow on smaller screens; the layout itself comes from the embedded
+   stylesheet. */
+.treesitter-side-by-side {
   width: min(1100px, calc(100vw - 380px));
+  margin-top: 1.5rem;
+  margin-bottom: 3.25rem;
   margin-left: 50%;
   column-gap: 2.25rem;
   transform: translateX(-50%);
 }
 
-.highlight-comparison-key {
-  margin-top: 1.5rem;
-  margin-bottom: 2.5rem;
-  padding-bottom: 0.55rem;
-  border-bottom: 1px solid var(--table-border-color);
-  font-size: 0.9em;
-}
-
-.highlight-comparison {
-  margin-top: 0.75rem;
-  margin-bottom: 3.25rem;
-}
-
-.highlight-comparison-pane {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-
-.highlight-comparison-pane > pre {
-  box-sizing: border-box;
-  width: 100%;
-  flex: 1;
-  margin: 0;
-}
-
 @media (max-width: 1080px) {
-  .highlight-comparison-key,
-  .highlight-comparison {
+  .treesitter-side-by-side {
     width: 100%;
     margin-left: 0;
     transform: none;
   }
 }
-
-@media (max-width: 760px) {
-  .highlight-comparison-key,
-  .highlight-comparison {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .highlight-comparison-key {
-    display: none;
-  }
-
-  .highlight-comparison {
-    row-gap: 1.5rem;
-  }
-}
-

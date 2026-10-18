@@ -3,27 +3,10 @@
 Private fields, closures, destructuring, optional chaining, promises, and async
 generators.
 
-<div class="highlight-comparison-key">
-  <strong>mdBook</strong>
-  <strong>tree-sitter</strong>
-</div>
-
-<div class="highlight-comparison">
-
-<div class="highlight-comparison-pane">
-
-```javascript,notreesitter
+```javascript,pane="tree-sitter"
 {{#include ../snippets/javascript.js}}
 ```
 
-</div>
-
-<div class="highlight-comparison-pane">
-
-```javascript
+```javascript,notreesitter,pane="highlight.js"
 {{#include ../snippets/javascript.js}}
 ```
-
-</div>
-
-</div>

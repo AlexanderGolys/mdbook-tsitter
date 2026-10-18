@@ -23,7 +23,8 @@ const HIDDEN_LINE_SPAN: &str = "<span class=\"boring\">";
 const LANGUAGE_ATTRIBUTE: &str = "data-language";
 
 /// Fenced blocks exercising every native feature: playground eligibility,
-/// edition handling, the implicit `fn main`, and hidden-line syntaxes.
+/// edition handling, the implicit `fn main`, and hidden-line syntaxes, plus
+/// text that other preprocessors read as their own syntax.
 const CASES: &[(&str, &str)] = &[
     ("rust", "let x = 1;\n"),
     ("rust", "fn main() {\n    println!(\"hi\");\n}\n"),
@@ -34,6 +35,7 @@ const CASES: &[(&str, &str)] = &[
     ("rust", "#![allow(dead_code)]\n\nstruct Unused;\n"),
     ("rust", "x();\n#\n  # indented();\n#\tnot_hidden();\n"),
     ("rust", "/* a\n# b */\nlet c = 1;\n"),
+    ("rust", "let cost = \"$5 and $6\\\\n\";\n"),
     ("rust,ignore", "visible();\n#\n"),
     (
         "rust,ignore",
@@ -217,6 +219,8 @@ fn decode_entities(text: &str) -> String {
         .replace("&quot;", "\"")
         .replace("&#39;", "'")
         .replace("&#x27;", "'")
+        .replace("&#36;", "$")
+        .replace("&#92;", "\\")
         .replace("&amp;", "&")
 }
 
@@ -235,7 +239,9 @@ fn build_book(mdbook: &Path, name: &str, extra_config: &str) -> PathBuf {
             let file = format!("{chapter}-{index}.md");
             fs::write(
                 src.join(&file),
-                format!("# Case\n\n```{fence}\n{code}```\n"),
+                // Thematic breaks around the fence, which Markdown extensions
+                // mdBook does not enable would read as a metadata block.
+                format!("# Case\n\n---\n```{fence}\n{code}```\n---\n"),
             )
             .unwrap();
             summary.push_str(&format!("- [{chapter} {index}]({file})\n"));
