@@ -1,5 +1,5 @@
 /* Everforest (dark, medium contrast) as an extra mdBook theme. mdBook sets the
-   active theme as a class on <html>; `index.hbs` adds it to the theme picker.
+   active theme as a class on <html>; the bundled script adds the picker entry.
    Palette: https://github.com/sainnhe/everforest */
 
 .everforest {
@@ -62,7 +62,6 @@
 
     --sidebar-header-border-color: #a7c080;
 
-    /* ANCHOR: highlighting */
     /* Tree-sitter hues: Everforest's palette. */
     --ts-red:    #e67e80;
     --ts-orange: #e69875;
@@ -89,7 +88,6 @@
     --ts-attribute:   var(--ts-purple);
     --ts-heading:     var(--ts-orange);
     --ts-link:        var(--ts-blue);
-    /* ANCHOR_END: highlighting */
 }
 
 /* Code blocks, and highlight.js blocks in the same roles, so blocks left to

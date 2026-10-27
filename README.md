@@ -115,6 +115,7 @@ Everything lives under `[preprocessor.tsitter]`.
 | key      | default | meaning |
 | -------- | ------- | ------- |
 | `inject` | `true`  | Highlight embedded languages using configured injection queries. Only configured languages are used. Set this to `false` to disable injections globally. |
+| `everforest` | `false` | Include the Everforest dark theme, its theme-picker entry, and complete tree-sitter and highlight.js styles on every chapter. |
 | `default-css` | `true` | Embed the highlighting stylesheet (the theme directory's `highlight_ts.css`, or the bundled one) in chapters with highlighted blocks. See [Theming](https://spectralflux.dev/mdbook-tsitter/guide/theming.html). |
 
 ### Language options
@@ -417,6 +418,24 @@ code[data-language="rust"] .ts-function-macro {
 Each highlighted block carries its fence tag as `data-language`, so a
 `code[data-language="…"]` selector scopes a rule to one language.
 
+### Everforest
+
+Include the bundled Everforest dark theme (medium contrast):
+
+```toml
+[preprocessor.tsitter]
+everforest = true
+```
+
+Select **Everforest** from the book's theme picker. This includes the book
+interface, highlight.js colours for blocks left to mdBook, and tree-sitter
+capture styles with language-specific overrides, italic comments, bold
+headings, and underlined URLs. No extra CSS, script, or template is needed.
+The theme is included on every chapter, even pages without code blocks.
+It can also supply the highlights for books that already use an `.everforest`
+theme. Custom `highlight_ts.css` and `default-css` still control the base
+highlighting stylesheet; the Everforest option supplies its own styles.
+
 ### Theme directory
 
 Like mdBook's own [theme files](https://rust-lang.github.io/mdBook/format/theme/index.html),
@@ -551,6 +570,8 @@ Finally, every chapter with a highlighted block gets the highlighting
 stylesheet as a `<style>` element in the `mdbook-tsitter` cascade layer: the
 theme directory's `highlight_ts.css`, or else the bundled stylesheet, with any
 colours carried over from highlight.js stylesheets the theme replaces.
+When `everforest = true`, every chapter also receives the bundled Everforest
+stylesheet and theme-picker script.
 
 <!-- ANCHOR_END: how-it-works -->
 

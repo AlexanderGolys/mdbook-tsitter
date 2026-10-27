@@ -1,6 +1,6 @@
 //! Grammar resolution: maps a code-fence language tag (e.g. `rust`) to a
 //! configured tree-sitter [`HighlightConfiguration`]. Every grammar is loaded
-//! at runtime as described in `book.toml` ([`load_dynamic`]): fetched and
+//! at runtime as described in `book.toml`: fetched and
 //! compiled from its git repository (known by name or configured), or from a
 //! prebuilt shared library.
 //! Dynamic loading is what makes the preprocessor work for *any* language.

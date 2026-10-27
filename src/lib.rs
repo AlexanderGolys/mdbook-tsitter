@@ -17,6 +17,7 @@ pub mod predicates;
 pub mod render;
 pub mod theme;
 
+use anyhow::Context;
 use mdbook_preprocessor::book::{Book, BookItem};
 use mdbook_preprocessor::config::HtmlConfig;
 use mdbook_preprocessor::errors::Result;
@@ -90,6 +91,13 @@ impl Preprocessor for TreeSitterPreprocessor {
             None
         };
 
+        let everforest = ctx
+            .config
+            .get::<bool>("preprocessor.tsitter.everforest")
+            .context("invalid preprocessor.tsitter.everforest option: expected a boolean")?
+            .unwrap_or(false)
+            .then(theme::everforest_assets);
+
         book.for_each_mut(|item| {
             if let BookItem::Chapter(chapter) = item {
                 let rewritten =
@@ -98,6 +106,9 @@ impl Preprocessor for TreeSitterPreprocessor {
                 chapter.content = rewritten;
                 if let Some(css) = embedded_css.as_deref().filter(|_| highlighted) {
                     chapter.content.push_str(css);
+                }
+                if let Some(assets) = &everforest {
+                    chapter.content.push_str(assets);
                 }
             }
         });
@@ -114,6 +125,39 @@ impl Preprocessor for TreeSitterPreprocessor {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn everforest_is_available_on_chapters_without_highlighted_blocks() {
+        use mdbook_preprocessor::book::Chapter;
+
+        for enabled in [false, true] {
+            let mut config = mdbook_preprocessor::config::Config::default();
+            config
+                .set("preprocessor.tsitter.everforest", enabled)
+                .unwrap();
+            config
+                .set("preprocessor.tsitter.default-css", false)
+                .unwrap();
+            let context =
+                PreprocessorContext::new(std::env::temp_dir(), config, "html".to_string());
+            let mut book = Book::new();
+            book.push_item(Chapter::new(
+                "Intro",
+                "Hello".to_string(),
+                "intro.md",
+                vec![],
+            ));
+            let processed = TreeSitterPreprocessor.run(&context, book).unwrap();
+            let BookItem::Chapter(chapter) = &processed.items[0] else {
+                panic!("expected a chapter");
+            };
+            assert_eq!(chapter.content.contains(theme::EVERFOREST_CSS), enabled);
+            assert_eq!(chapter.content.contains("registerEverforest"), enabled);
+            if !enabled {
+                assert_eq!(chapter.content, "Hello");
+            }
+        }
+    }
 
     #[test]
     fn default_stylesheet_carries_its_signature() {

@@ -13,6 +13,18 @@ use anyhow::{Context, Result};
 
 use crate::DEFAULT_CSS;
 
+/// Everforest's book colours and tree-sitter capture styles.
+pub const EVERFOREST_CSS: &str = include_str!("../assets/everforest.css");
+
+/// Theme-picker registration and dark editor support for Everforest.
+const EVERFOREST_JS: &str = include_str!("../assets/everforest.js");
+
+/// Embed the complete book theme outside the highlighting cascade layer so
+/// its interface variables override mdBook's unlayered built-in colours.
+pub fn everforest_assets() -> String {
+    format!("\n\n<style>\n{EVERFOREST_CSS}</style>\n<script>\n{EVERFOREST_JS}</script>\n")
+}
+
 /// File in the theme directory that replaces the bundled stylesheet.
 pub const THEME_STYLESHEET: &str = "highlight_ts.css";
 

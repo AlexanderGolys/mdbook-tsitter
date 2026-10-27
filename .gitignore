@@ -2,3 +2,6 @@
 target/
 /examples/languages/book
 .vercel
+
+/release-audit.local.md
+/release-notes.local.md

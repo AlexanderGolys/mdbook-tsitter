@@ -7,6 +7,7 @@ src = "src"
 # root README.md / CONTRIBUTING.md) is highlighted too.
 [preprocessor.tsitter]
 after = ["links"]
+everforest = true
 # This book documents the preprocessor in this repository, so it runs it from
 # source; mdBook starts the command in the book's directory, without a shell.
 # A book using the published crate needs no `command`.
@@ -39,10 +40,8 @@ edition = "2021"
 [output.html]
 site-url = "/mdbook-tsitter/"
 # Layout for the side-by-side comparison chapters; highlighting colours come
-# from the embedded stylesheet. Everforest is an extra mdBook theme, added to
-# the theme picker by `theme/index.hbs` (see the Theming chapter).
-additional-css = ["theme/comparison.css", "theme/everforest.css"]
-additional-js = ["theme/everforest.js"]
+# from the embedded stylesheet. Everforest is bundled by the preprocessor.
+additional-css = ["theme/comparison.css"]
 
 # Playground features kept on highlighted blocks (see the Interactive chapter).
 [output.html.playground]
