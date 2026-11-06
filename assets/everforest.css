@@ -161,7 +161,7 @@
    The bundled stylesheet's dimmed punctuation and link underlines have no
    counterpart in Neovim, so they are reset first, at the lowest specificity,
    on capture spans only: mdBook dims hidden lines through their wrapper. */
-.everforest :where(pre.treesitter [class^="ts-"]) {
+.everforest :where(pre.treesitter :is([class^="ts-"], [class^="lsp-"])) {
     opacity: 1;
     text-decoration: none;
 }
@@ -345,3 +345,111 @@
 .everforest code[data-language="markdown"] .ts-markup-heading-4-marker { color: #859289; font-weight: normal; }
 .everforest code[data-language="markdown"] .ts-markup-heading-5-marker { color: #859289; font-weight: normal; }
 .everforest code[data-language="markdown"] .ts-markup-heading-6-marker { color: #859289; font-weight: normal; }
+
+/* LSP semantic tokens (`${token|text}$` in a block). A token has the class
+   `lsp-<type>` and a class `lsp-mod-<modifier>` for each modifier. To recolour
+   one, set the variable of the same name — `--lsp-enum`, `--lsp-mod-readonly` —
+   anywhere that reaches the code, e.g. `:root { --lsp-enum: hotpink; }`. A
+   variable left unset falls back to the colour below, which is the tree-sitter
+   colour of the closest capture. A modifier left unset keeps its type's colour. */
+.everforest .lsp-type { --lsp-color: var(--lsp-type, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-class { --lsp-color: var(--lsp-class, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-enum { --lsp-color: var(--lsp-enum, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-interface { --lsp-color: var(--lsp-interface, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-struct { --lsp-color: var(--lsp-struct, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-typeparameter { --lsp-color: var(--lsp-typeparameter, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-comment { --lsp-color: var(--lsp-comment, #859289); color: var(--lsp-color); font-style: italic; }
+.everforest .lsp-decorator { --lsp-color: var(--lsp-decorator, #a7c080); color: var(--lsp-color); }
+.everforest .lsp-enummember { --lsp-color: var(--lsp-enummember, #7fbbb3); color: var(--lsp-color); }
+.everforest .lsp-event { --lsp-color: var(--lsp-event, #e69875); color: var(--lsp-color); }
+.everforest .lsp-label { --lsp-color: var(--lsp-label, #e69875); color: var(--lsp-color); }
+.everforest .lsp-function { --lsp-color: var(--lsp-function, #a7c080); color: var(--lsp-color); }
+.everforest .lsp-method { --lsp-color: var(--lsp-method, #a7c080); color: var(--lsp-color); }
+.everforest .lsp-keyword { --lsp-color: var(--lsp-keyword, #e67e80); color: var(--lsp-color); }
+.everforest .lsp-modifier { --lsp-color: var(--lsp-modifier, #e69875); color: var(--lsp-color); }
+.everforest .lsp-macro { --lsp-color: var(--lsp-macro, #d699b6); color: var(--lsp-color); }
+.everforest .lsp-namespace { --lsp-color: var(--lsp-namespace, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-number { --lsp-color: var(--lsp-number, #d699b6); color: var(--lsp-color); }
+.everforest .lsp-operator { --lsp-color: var(--lsp-operator, #e69875); color: var(--lsp-color); }
+.everforest .lsp-parameter { --lsp-color: var(--lsp-parameter, #d3c6aa); color: var(--lsp-color); }
+.everforest .lsp-property { --lsp-color: var(--lsp-property, #7fbbb3); color: var(--lsp-color); }
+.everforest .lsp-regexp { --lsp-color: var(--lsp-regexp, #a7c080); color: var(--lsp-color); }
+.everforest .lsp-string { --lsp-color: var(--lsp-string, #83c092); color: var(--lsp-color); }
+.everforest .lsp-variable { --lsp-color: var(--lsp-variable, #d3c6aa); color: var(--lsp-color); }
+.everforest .lsp-escapesequence { --lsp-color: var(--lsp-escapesequence, #a7c080); color: var(--lsp-color); }
+.everforest .lsp-delimiter { --lsp-color: var(--lsp-delimiter, #d3c6aa); color: var(--lsp-color); }
+.everforest .lsp-punctuation { --lsp-color: var(--lsp-punctuation, #859289); color: var(--lsp-color); }
+.everforest .lsp-typealias { --lsp-color: var(--lsp-typealias, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-selfkeyword { --lsp-color: var(--lsp-selfkeyword, #d699b6); color: var(--lsp-color); }
+.everforest .lsp-selftypekeyword { --lsp-color: var(--lsp-selftypekeyword, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-lifetime { --lsp-color: var(--lsp-lifetime, #e69875); color: var(--lsp-color); }
+.everforest .lsp-derive { --lsp-color: var(--lsp-derive, #d699b6); color: var(--lsp-color); }
+.everforest .lsp-builtintype { --lsp-color: var(--lsp-builtintype, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-angle { --lsp-color: var(--lsp-angle, #d3c6aa); color: var(--lsp-color); }
+.everforest .lsp-brace { --lsp-color: var(--lsp-brace, #d3c6aa); color: var(--lsp-color); }
+.everforest .lsp-bracket { --lsp-color: var(--lsp-bracket, #d3c6aa); color: var(--lsp-color); }
+.everforest .lsp-parenthesis { --lsp-color: var(--lsp-parenthesis, #d3c6aa); color: var(--lsp-color); }
+.everforest .lsp-attributebracket { --lsp-color: var(--lsp-attributebracket, #d3c6aa); color: var(--lsp-color); }
+.everforest .lsp-colon { --lsp-color: var(--lsp-colon, #859289); color: var(--lsp-color); }
+.everforest .lsp-comma { --lsp-color: var(--lsp-comma, #859289); color: var(--lsp-color); }
+.everforest .lsp-dot { --lsp-color: var(--lsp-dot, #859289); color: var(--lsp-color); }
+.everforest .lsp-semicolon { --lsp-color: var(--lsp-semicolon, #859289); color: var(--lsp-color); }
+.everforest .lsp-arithmetic { --lsp-color: var(--lsp-arithmetic, #e69875); color: var(--lsp-color); }
+.everforest .lsp-bitwise { --lsp-color: var(--lsp-bitwise, #e69875); color: var(--lsp-color); }
+.everforest .lsp-comparison { --lsp-color: var(--lsp-comparison, #e69875); color: var(--lsp-color); }
+.everforest .lsp-logical { --lsp-color: var(--lsp-logical, #e69875); color: var(--lsp-color); }
+.everforest .lsp-attribute { --lsp-color: var(--lsp-attribute, #d699b6); color: var(--lsp-color); }
+.everforest .lsp-builtinattribute { --lsp-color: var(--lsp-builtinattribute, #d699b6); color: var(--lsp-color); }
+.everforest .lsp-derivehelper { --lsp-color: var(--lsp-derivehelper, #d699b6); color: var(--lsp-color); }
+.everforest .lsp-boolean { --lsp-color: var(--lsp-boolean, #d699b6); color: var(--lsp-color); }
+.everforest .lsp-character { --lsp-color: var(--lsp-character, #83c092); color: var(--lsp-color); }
+.everforest .lsp-const { --lsp-color: var(--lsp-const, #d3c6aa); color: var(--lsp-color); }
+.everforest .lsp-constparameter { --lsp-color: var(--lsp-constparameter, #d3c6aa); color: var(--lsp-color); }
+.everforest .lsp-static { --lsp-color: var(--lsp-static, #d3c6aa); color: var(--lsp-color); }
+.everforest .lsp-formatspecifier { --lsp-color: var(--lsp-formatspecifier, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-generic { --lsp-color: var(--lsp-generic, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-union { --lsp-color: var(--lsp-union, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-invalidescapesequence { --lsp-color: var(--lsp-invalidescapesequence, #e67e80); color: var(--lsp-color); }
+.everforest .lsp-unresolvedreference { --lsp-color: var(--lsp-unresolvedreference, #e67e80); color: var(--lsp-color); }
+.everforest .lsp-macrobang { --lsp-color: var(--lsp-macrobang, #d699b6); color: var(--lsp-color); }
+.everforest .lsp-procmacro { --lsp-color: var(--lsp-procmacro, #d699b6); color: var(--lsp-color); }
+.everforest .lsp-toolmodule { --lsp-color: var(--lsp-toolmodule, #dbbc7f); color: var(--lsp-color); }
+.everforest .lsp-mod-declaration { color: var(--lsp-mod-declaration, var(--lsp-color)); }
+.everforest .lsp-mod-definition { color: var(--lsp-mod-definition, var(--lsp-color)); }
+.everforest .lsp-mod-readonly { color: var(--lsp-mod-readonly, var(--lsp-color)); }
+.everforest .lsp-mod-static { color: var(--lsp-mod-static, var(--lsp-color)); }
+.everforest .lsp-mod-deprecated { color: var(--lsp-mod-deprecated, var(--lsp-color)); text-decoration: line-through; }
+.everforest .lsp-mod-abstract { color: var(--lsp-mod-abstract, var(--lsp-color)); }
+.everforest .lsp-mod-async { color: var(--lsp-mod-async, var(--lsp-color)); }
+.everforest .lsp-mod-modification { color: var(--lsp-mod-modification, var(--lsp-color)); }
+.everforest .lsp-mod-documentation { color: var(--lsp-mod-documentation, var(--lsp-color)); }
+.everforest .lsp-mod-defaultlibrary { color: var(--lsp-mod-defaultlibrary, var(--lsp-color)); }
+.everforest .lsp-mod-option { color: var(--lsp-mod-option, var(--lsp-color)); }
+.everforest .lsp-mod-algebraic { color: var(--lsp-mod-algebraic, var(--lsp-color)); }
+.everforest .lsp-mod-access { color: var(--lsp-mod-access, var(--lsp-color)); }
+.everforest .lsp-mod-monospace { color: var(--lsp-mod-monospace, var(--lsp-color)); }
+.everforest .lsp-mod-math { color: var(--lsp-mod-math, var(--lsp-color)); }
+.everforest .lsp-mod-example { color: var(--lsp-mod-example, var(--lsp-color)); }
+.everforest .lsp-mod-test { color: var(--lsp-mod-test, var(--lsp-color)); }
+.everforest .lsp-mod-index { color: var(--lsp-mod-index, var(--lsp-color)); }
+.everforest .lsp-mod-nonsense { color: var(--lsp-mod-nonsense, var(--lsp-color)); }
+.everforest .lsp-mod-strong { color: var(--lsp-mod-strong, var(--lsp-color)); font-weight: bold; }
+.everforest .lsp-mod-emphasis { color: var(--lsp-mod-emphasis, var(--lsp-color)); font-style: italic; }
+.everforest .lsp-mod-link { color: var(--lsp-mod-link, var(--ts-link)); text-decoration: underline; }
+.everforest .lsp-mod-associated { color: var(--lsp-mod-associated, var(--lsp-color)); }
+.everforest .lsp-mod-attribute { color: var(--lsp-mod-attribute, var(--lsp-color)); }
+.everforest .lsp-mod-callable { color: var(--lsp-mod-callable, var(--lsp-color)); }
+.everforest .lsp-mod-constant { color: var(--lsp-mod-constant, var(--lsp-color)); }
+.everforest .lsp-mod-consuming { color: var(--lsp-mod-consuming, var(--lsp-color)); }
+.everforest .lsp-mod-controlflow { color: var(--lsp-mod-controlflow, var(--lsp-color)); }
+.everforest .lsp-mod-crateroot { color: var(--lsp-mod-crateroot, var(--lsp-color)); }
+.everforest .lsp-mod-injected { color: var(--lsp-mod-injected, var(--lsp-color)); }
+.everforest .lsp-mod-intradoclink { color: var(--lsp-mod-intradoclink, var(--lsp-color)); text-decoration: underline; }
+.everforest .lsp-mod-library { color: var(--lsp-mod-library, var(--lsp-color)); }
+.everforest .lsp-mod-macro { color: var(--lsp-mod-macro, var(--lsp-color)); }
+.everforest .lsp-mod-mutable { color: var(--lsp-mod-mutable, var(--lsp-color)); }
+.everforest .lsp-mod-procmacro { color: var(--lsp-mod-procmacro, var(--lsp-color)); }
+.everforest .lsp-mod-public { color: var(--lsp-mod-public, var(--lsp-color)); }
+.everforest .lsp-mod-reference { color: var(--lsp-mod-reference, var(--lsp-color)); }
+.everforest .lsp-mod-trait { color: var(--lsp-mod-trait, var(--lsp-color)); }
+.everforest .lsp-mod-unsafe { color: var(--lsp-mod-unsafe, var(--lsp-color)); }

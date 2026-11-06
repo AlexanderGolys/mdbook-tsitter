@@ -157,6 +157,136 @@ pre.treesitter > code {
 .ts-attribute { color: var(--ts-attribute); }
 .ts-label { color: var(--ts-namespace); }
 
+/* LSP semantic tokens (`${token|text}$` in a block). A token has the class
+   `lsp-<type>` and a class `lsp-mod-<modifier>` for each modifier. To recolour
+   one, set the variable of the same name — `--lsp-enum`, `--lsp-mod-readonly` —
+   anywhere that reaches the code, e.g. `:root { --lsp-enum: hotpink; }`. A
+   variable left unset falls back to the colour below, which is the tree-sitter
+   colour of the closest capture. A modifier left unset keeps its type's colour. */
+.lsp-type { --lsp-color: var(--lsp-type, var(--ts-type)); color: var(--lsp-color); }
+.lsp-class { --lsp-color: var(--lsp-class, var(--ts-type)); color: var(--lsp-color); }
+.lsp-enum { --lsp-color: var(--lsp-enum, var(--ts-type)); color: var(--lsp-color); }
+.lsp-interface { --lsp-color: var(--lsp-interface, var(--ts-type)); color: var(--lsp-color); }
+.lsp-struct { --lsp-color: var(--lsp-struct, var(--ts-type)); color: var(--lsp-color); }
+.lsp-typeparameter { --lsp-color: var(--lsp-typeparameter, var(--ts-type)); color: var(--lsp-color); }
+.lsp-comment { --lsp-color: var(--lsp-comment, var(--ts-comment)); color: var(--lsp-color); }
+.lsp-decorator { --lsp-color: var(--lsp-decorator, var(--ts-attribute)); color: var(--lsp-color); }
+.lsp-enummember { --lsp-color: var(--lsp-enummember, var(--ts-function)); color: var(--lsp-color); }
+.lsp-event { --lsp-color: var(--lsp-event, var(--ts-namespace)); color: var(--lsp-color); }
+.lsp-label { --lsp-color: var(--lsp-label, var(--ts-namespace)); color: var(--lsp-color); }
+.lsp-function { --lsp-color: var(--lsp-function, var(--ts-function)); color: var(--lsp-color); }
+.lsp-method { --lsp-color: var(--lsp-method, var(--ts-function)); color: var(--lsp-color); }
+.lsp-keyword { --lsp-color: var(--lsp-keyword, var(--ts-keyword)); color: var(--lsp-color); }
+.lsp-modifier { --lsp-color: var(--lsp-modifier, var(--ts-keyword)); color: var(--lsp-color); }
+.lsp-macro { --lsp-color: var(--lsp-macro, var(--ts-number)); color: var(--lsp-color); }
+.lsp-namespace { --lsp-color: var(--lsp-namespace, var(--ts-namespace)); color: var(--lsp-color); }
+.lsp-number { --lsp-color: var(--lsp-number, var(--ts-number)); color: var(--lsp-color); }
+.lsp-operator { --lsp-color: var(--lsp-operator, inherit); color: var(--lsp-color); }
+.lsp-parameter { --lsp-color: var(--lsp-parameter, var(--ts-special)); color: var(--lsp-color); }
+.lsp-property { --lsp-color: var(--lsp-property, var(--ts-function)); color: var(--lsp-color); }
+.lsp-regexp { --lsp-color: var(--lsp-regexp, var(--ts-escape)); color: var(--lsp-color); }
+.lsp-string { --lsp-color: var(--lsp-string, var(--ts-string)); color: var(--lsp-color); }
+.lsp-variable { --lsp-color: var(--lsp-variable, inherit); color: var(--lsp-color); }
+.lsp-escapesequence { --lsp-color: var(--lsp-escapesequence, var(--ts-escape)); color: var(--lsp-color); }
+.lsp-delimiter { --lsp-color: var(--lsp-delimiter, inherit); color: var(--lsp-color); opacity: 0.75; }
+.lsp-punctuation { --lsp-color: var(--lsp-punctuation, inherit); color: var(--lsp-color); opacity: 0.75; }
+.lsp-typealias { --lsp-color: var(--lsp-typealias, var(--ts-type)); color: var(--lsp-color); }
+.lsp-selfkeyword { --lsp-color: var(--lsp-selfkeyword, var(--ts-special)); color: var(--lsp-color); }
+.lsp-selftypekeyword { --lsp-color: var(--lsp-selftypekeyword, var(--ts-type)); color: var(--lsp-color); }
+.lsp-lifetime { --lsp-color: var(--lsp-lifetime, var(--ts-namespace)); color: var(--lsp-color); }
+.lsp-derive { --lsp-color: var(--lsp-derive, var(--ts-attribute)); color: var(--lsp-color); }
+.lsp-builtintype { --lsp-color: var(--lsp-builtintype, var(--ts-type)); color: var(--lsp-color); }
+.lsp-angle { --lsp-color: var(--lsp-angle, inherit); color: var(--lsp-color); opacity: 0.75; }
+.lsp-brace { --lsp-color: var(--lsp-brace, inherit); color: var(--lsp-color); opacity: 0.75; }
+.lsp-bracket { --lsp-color: var(--lsp-bracket, inherit); color: var(--lsp-color); opacity: 0.75; }
+.lsp-parenthesis { --lsp-color: var(--lsp-parenthesis, inherit); color: var(--lsp-color); opacity: 0.75; }
+.lsp-attributebracket { --lsp-color: var(--lsp-attributebracket, inherit); color: var(--lsp-color); opacity: 0.75; }
+.lsp-colon { --lsp-color: var(--lsp-colon, inherit); color: var(--lsp-color); opacity: 0.75; }
+.lsp-comma { --lsp-color: var(--lsp-comma, inherit); color: var(--lsp-color); opacity: 0.75; }
+.lsp-dot { --lsp-color: var(--lsp-dot, inherit); color: var(--lsp-color); opacity: 0.75; }
+.lsp-semicolon { --lsp-color: var(--lsp-semicolon, inherit); color: var(--lsp-color); opacity: 0.75; }
+.lsp-arithmetic { --lsp-color: var(--lsp-arithmetic, inherit); color: var(--lsp-color); }
+.lsp-bitwise { --lsp-color: var(--lsp-bitwise, inherit); color: var(--lsp-color); }
+.lsp-comparison { --lsp-color: var(--lsp-comparison, inherit); color: var(--lsp-color); }
+.lsp-logical { --lsp-color: var(--lsp-logical, inherit); color: var(--lsp-color); }
+.lsp-attribute { --lsp-color: var(--lsp-attribute, var(--ts-attribute)); color: var(--lsp-color); }
+.lsp-builtinattribute { --lsp-color: var(--lsp-builtinattribute, var(--ts-attribute)); color: var(--lsp-color); }
+.lsp-derivehelper { --lsp-color: var(--lsp-derivehelper, var(--ts-attribute)); color: var(--lsp-color); }
+.lsp-boolean { --lsp-color: var(--lsp-boolean, var(--ts-number)); color: var(--lsp-color); }
+.lsp-character { --lsp-color: var(--lsp-character, var(--ts-string)); color: var(--lsp-color); }
+.lsp-const { --lsp-color: var(--lsp-const, var(--ts-number)); color: var(--lsp-color); }
+.lsp-constparameter { --lsp-color: var(--lsp-constparameter, var(--ts-number)); color: var(--lsp-color); }
+.lsp-static { --lsp-color: var(--lsp-static, var(--ts-number)); color: var(--lsp-color); }
+.lsp-formatspecifier { --lsp-color: var(--lsp-formatspecifier, var(--ts-escape)); color: var(--lsp-color); }
+.lsp-generic { --lsp-color: var(--lsp-generic, var(--ts-type)); color: var(--lsp-color); }
+.lsp-union { --lsp-color: var(--lsp-union, var(--ts-type)); color: var(--lsp-color); }
+.lsp-invalidescapesequence { --lsp-color: var(--lsp-invalidescapesequence, var(--ts-special)); color: var(--lsp-color); }
+.lsp-unresolvedreference { --lsp-color: var(--lsp-unresolvedreference, var(--ts-special)); color: var(--lsp-color); }
+.lsp-macrobang { --lsp-color: var(--lsp-macrobang, var(--ts-number)); color: var(--lsp-color); }
+.lsp-procmacro { --lsp-color: var(--lsp-procmacro, var(--ts-number)); color: var(--lsp-color); }
+.lsp-toolmodule { --lsp-color: var(--lsp-toolmodule, var(--ts-namespace)); color: var(--lsp-color); }
+.lsp-mod-declaration { color: var(--lsp-mod-declaration, var(--lsp-color)); }
+.lsp-mod-definition { color: var(--lsp-mod-definition, var(--lsp-color)); }
+.lsp-mod-readonly { color: var(--lsp-mod-readonly, var(--lsp-color)); }
+.lsp-mod-static { color: var(--lsp-mod-static, var(--lsp-color)); }
+.lsp-mod-deprecated { color: var(--lsp-mod-deprecated, var(--lsp-color)); text-decoration: line-through; }
+.lsp-mod-abstract { color: var(--lsp-mod-abstract, var(--lsp-color)); }
+.lsp-mod-async { color: var(--lsp-mod-async, var(--lsp-color)); }
+.lsp-mod-modification { color: var(--lsp-mod-modification, var(--lsp-color)); }
+.lsp-mod-documentation { color: var(--lsp-mod-documentation, var(--lsp-color)); }
+.lsp-mod-defaultlibrary { color: var(--lsp-mod-defaultlibrary, var(--lsp-color)); }
+.lsp-mod-option { color: var(--lsp-mod-option, var(--lsp-color)); }
+.lsp-mod-algebraic { color: var(--lsp-mod-algebraic, var(--lsp-color)); }
+.lsp-mod-access { color: var(--lsp-mod-access, var(--lsp-color)); }
+.lsp-mod-monospace { color: var(--lsp-mod-monospace, var(--lsp-color)); }
+.lsp-mod-math { color: var(--lsp-mod-math, var(--lsp-color)); }
+.lsp-mod-example { color: var(--lsp-mod-example, var(--lsp-color)); }
+.lsp-mod-test { color: var(--lsp-mod-test, var(--lsp-color)); }
+.lsp-mod-index { color: var(--lsp-mod-index, var(--lsp-color)); }
+.lsp-mod-nonsense { color: var(--lsp-mod-nonsense, var(--lsp-color)); }
+.lsp-mod-strong { color: var(--lsp-mod-strong, var(--lsp-color)); font-weight: bold; }
+.lsp-mod-emphasis { color: var(--lsp-mod-emphasis, var(--lsp-color)); font-style: italic; }
+.lsp-mod-link { color: var(--lsp-mod-link, var(--ts-link)); text-decoration: underline; }
+.lsp-mod-associated { color: var(--lsp-mod-associated, var(--lsp-color)); }
+.lsp-mod-attribute { color: var(--lsp-mod-attribute, var(--lsp-color)); }
+.lsp-mod-callable { color: var(--lsp-mod-callable, var(--lsp-color)); }
+.lsp-mod-constant { color: var(--lsp-mod-constant, var(--lsp-color)); }
+.lsp-mod-consuming { color: var(--lsp-mod-consuming, var(--lsp-color)); }
+.lsp-mod-controlflow { color: var(--lsp-mod-controlflow, var(--lsp-color)); }
+.lsp-mod-crateroot { color: var(--lsp-mod-crateroot, var(--lsp-color)); }
+.lsp-mod-injected { color: var(--lsp-mod-injected, var(--lsp-color)); }
+.lsp-mod-intradoclink { color: var(--lsp-mod-intradoclink, var(--lsp-color)); text-decoration: underline; }
+.lsp-mod-library { color: var(--lsp-mod-library, var(--lsp-color)); }
+.lsp-mod-macro { color: var(--lsp-mod-macro, var(--lsp-color)); }
+.lsp-mod-mutable { color: var(--lsp-mod-mutable, var(--lsp-color)); }
+.lsp-mod-procmacro { color: var(--lsp-mod-procmacro, var(--lsp-color)); }
+.lsp-mod-public { color: var(--lsp-mod-public, var(--lsp-color)); }
+.lsp-mod-reference { color: var(--lsp-mod-reference, var(--lsp-color)); }
+.lsp-mod-trait { color: var(--lsp-mod-trait, var(--lsp-color)); }
+.lsp-mod-unsafe { color: var(--lsp-mod-unsafe, var(--lsp-color)); }
+
+/* ---- Document highlights (`§highlight.read|name§`, `§highlight.write.cursor|name§`) ---- */
+/* A language server highlights every occurrence of the symbol under the cursor,
+   as a text, read or write occurrence. These are backgrounds, so the token keeps
+   its own colour. The `cursor` modifier draws a block cursor over the first
+   character of the token. */
+.lsp-highlight {
+  background: color-mix(in srgb, var(--ts-yellow) 30%, transparent);
+  border-radius: 0.2em;
+}
+.lsp-highlight.lsp-mod-read { background: color-mix(in srgb, var(--ts-blue) 30%, transparent); }
+.lsp-highlight.lsp-mod-write { background: color-mix(in srgb, var(--ts-red) 30%, transparent); }
+.lsp-mod-cursor { position: relative; }
+.lsp-mod-cursor::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 1ch;
+  background: currentColor;
+  opacity: 0.55;
+}
+
 /* ---- Side-by-side panes (```lang,pane="…" and ```lang,compare) --------- */
 /* Panes side by side, the same height, stacked on narrow screens. */
 .treesitter-side-by-side {
