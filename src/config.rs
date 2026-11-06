@@ -33,9 +33,12 @@ use mdbook_preprocessor::PreprocessorContext;
 use serde::Deserialize;
 
 /// Parsed preprocessor configuration. Unknown keys (e.g. mdBook's own
-/// `command`, `renderers`) are ignored.
+/// `command`, `renderers`) are ignored. New options are added in minor
+/// releases, so the struct is `#[non_exhaustive]`: build it from
+/// [`Default`], not with a struct literal.
 #[derive(Debug, Deserialize)]
 #[serde(default)]
+#[non_exhaustive]
 pub struct Config {
     /// The languages to highlight, keyed by language name.
     pub languages: HashMap<String, LanguageConfig>,
@@ -66,9 +69,11 @@ impl Default for Config {
 
 /// One grammar, taken from a git repository (`git`) or the built-in grammar
 /// list. An unknown key is an error, so a setting that no longer exists, such as
-/// 3.x's `library`, is reported instead of silently ignored.
+/// 3.x's `library`, is reported instead of silently ignored. New options are
+/// added in minor releases, so the struct is `#[non_exhaustive]`.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[non_exhaustive]
 pub struct LanguageConfig {
     /// URL of the grammar's git repository, fetched and compiled on demand;
     /// defaults to the built-in list's repository for the language.

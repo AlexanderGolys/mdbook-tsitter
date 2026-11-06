@@ -109,7 +109,9 @@ that opt out are left untouched for mdBook to handle.
 
 <!-- ANCHOR: configuration -->
 
-Everything lives under `[preprocessor.tsitter]`.
+Everything lives under `[preprocessor.tsitter]`. New options arrive in minor
+releases: the public `Config` and `LanguageConfig` structs are
+`#[non_exhaustive]`, so adding one never breaks code that uses them.
 
 ### Preprocessor options
 
@@ -361,7 +363,10 @@ To recolour a token, set the CSS variable named after it, anywhere in your
 `--lsp-<type>` colours a token type, written in lowercase (`--lsp-enummember`),
 and `--lsp-mod-<modifier>` a modifier (`--lsp-mod-defaultlibrary`). No selectors
 or specificity to think about, and it works the same in every theme, Everforest
-included. Variables left unset keep the bundled colours.
+included. Variables left unset keep the bundled colours. These names are stable
+within a major version: the classes `lsp-<type>` and `lsp-mod-<modifier>` and the
+variables `--lsp-<type>` and `--lsp-mod-<modifier>` are renamed or removed only
+in a new one.
 
 The bundled stylesheets know every token type and modifier of m2-ls and
 rust-analyzer, and the standard ones of the protocol, in every mdBook theme and
@@ -593,9 +598,10 @@ understands.
   in it. A copy that replaces the bundled theme belongs in
   `theme/highlight_ts.css`.
 - **The library API changes.** `LanguageConfig` loses `library` and `symbol`,
-  gains `lsp`, and rejects unknown keys. Code that builds one with a struct
-  literal must be updated, and the `libloading` and `tree-sitter-language`
-  dependencies are gone.
+  gains `lsp`, and rejects unknown keys. `Config` and `LanguageConfig` are now
+  `#[non_exhaustive]`, so code that builds one with a struct literal must be
+  updated, once: later options are minor releases. The `libloading` and
+  `tree-sitter-language` dependencies are gone.
 
 A 3.x or 2.x configuration such as
 
