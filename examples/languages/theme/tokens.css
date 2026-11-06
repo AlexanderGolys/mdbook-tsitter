@@ -1,0 +1,44 @@
+/* The bundled stylesheet colours a hand-marked token like the nearest
+   tree-sitter capture, so by default a mark changes little you can see. These
+   rules give the kinds a language server tells apart colours of their own.
+   They use the palette roles every theme defines, so they follow the theme. */
+:root {
+  --lsp-enum: var(--ts-orange);
+  --lsp-interface: var(--ts-purple);
+  --lsp-typeparameter: var(--ts-cyan);
+  --lsp-typealias: var(--ts-blue);
+  --lsp-enummember: var(--ts-purple);
+  --lsp-function: var(--ts-green);
+  --lsp-method: var(--ts-cyan);
+  --lsp-macro: var(--ts-red);
+  --lsp-derive: var(--ts-orange);
+  --lsp-lifetime: var(--ts-orange);
+  --lsp-selfkeyword: var(--ts-red);
+  --lsp-selftypekeyword: var(--ts-yellow);
+  --lsp-mod-controlflow: var(--ts-orange);
+  --lsp-mod-async: var(--ts-purple);
+}
+
+.lsp-typeparameter,
+.lsp-selfkeyword,
+.lsp-selftypekeyword,
+.lsp-lifetime {
+  font-style: italic;
+}
+
+/* A modifier on a type: compound selectors style exactly that combination. */
+.lsp-variable.lsp-mod-mutable,
+.lsp-selfkeyword.lsp-mod-mutable {
+  text-decoration: underline;
+}
+
+.lsp-parameter.lsp-mod-consuming,
+.lsp-variable.lsp-mod-consuming {
+  font-style: italic;
+}
+
+/* Three panes of wide code do not fit side by side: stack them. */
+.treesitter-side-by-side:has(> .treesitter-pane:nth-child(3)) {
+  grid-auto-flow: row;
+  row-gap: 2rem;
+}

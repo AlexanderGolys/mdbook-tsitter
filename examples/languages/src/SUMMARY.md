@@ -9,11 +9,14 @@
 - [Theming](./guide/theming.md)
 - [Interactive blocks](./examples/interactive.md)
 - [Side-by-side blocks](./guide/side-by-side.md)
+- [Hand-marked tokens](./guide/marks.md)
 - [Upgrading from 2.x](./guide/upgrading.md)
 - [How it works](./guide/how-it-works.md)
 
 # Examples
 
+- [Semantic tokens: rust-analyzer](./examples/rust-analyzer.md)
+- [Document highlights](./examples/document-highlight.md)
 - [Languages](./examples/languages.md)
   - [Rust](./examples/rust.md)
   - [C++](./examples/cpp.md)

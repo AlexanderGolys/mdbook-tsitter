@@ -41,7 +41,7 @@ edition = "2021"
 site-url = "/mdbook-tsitter/"
 # Layout for the side-by-side comparison chapters; highlighting colours come
 # from the embedded stylesheet. Everforest is bundled by the preprocessor.
-additional-css = ["theme/comparison.css"]
+additional-css = ["theme/comparison.css", "theme/tokens.css"]
 
 # Playground features kept on highlighted blocks (see the Interactive chapter).
 [output.html.playground]

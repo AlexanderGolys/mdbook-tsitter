@@ -11,7 +11,7 @@ categories = ["command-line-utilities", "text-processing"]
 readme = "README.md"
 # Keep example/test books and repository tooling out of the published
 # package — they only make sense from the git repo.
-exclude = ["/examples", "/docs", "/xtask", "/.cargo"]
+exclude = ["/examples", "/docs", "/xtask", "/tools", "/.cargo"]
 
 [workspace]
 members = ["xtask"]

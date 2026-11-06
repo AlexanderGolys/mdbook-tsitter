@@ -39,6 +39,8 @@ language of your own.
 - **Side-by-side blocks.** Label consecutive blocks with `pane="…"` to show
   them side by side under their labels, such as before and after a change,
   or the same idea in several languages.
+- **Hand-marked tokens.** In a block marked `lsp`, write `§token|text§` to
+  style `text` as an LSP semantic token, for what only a language server knows.
 - **Language aliases and locals queries.** Match several fence names to one
   grammar and opt into scope-aware query behavior where the grammar supports it.
 - **Selective processing.** Leave individual blocks to mdBook when you need its
@@ -134,6 +136,7 @@ relative to the book root.
 | `injections` | no       | Path to an injections query for embedded languages, used instead of the grammar's. |
 | `locals`     | no       | Path to a locals query for scope-aware highlighting, used instead of the grammar's. |
 | `aliases`    | no       | Code-fence names handled by this grammar; defaults to the entry's name. |
+| `lsp`        | no       | `false` by default. Set `true` to read `§` as a token marker in every block of the language, not only those marked `lsp`; see [Hand-marked tokens](#hand-marked-tokens). |
 | `library`    | no       | **Deprecated.** Path to a compiled parser shared library, used instead of fetching; requires `highlights`. |
 | `symbol`     | no       | **Deprecated.** Constructor symbol in `library`; defaults to `tree_sitter_<name>` with `-` changed to `_`. |
 
@@ -188,6 +191,11 @@ let highlighted = "by mdBook";
 Blocks labelled with `pane="…"` are shown side by side, and `compare` shows one
 block as tree-sitter and highlight.js highlight it. See
 [Side-by-side blocks](https://spectralflux.dev/mdbook-tsitter/guide/side-by-side.html).
+
+### Hand-marked tokens
+
+`§token|text§` in a block marked `lsp` styles `text` as an LSP semantic token. See
+[Hand-marked tokens](https://spectralflux.dev/mdbook-tsitter/guide/marks.html).
 
 ### Alongside other preprocessors
 
@@ -309,6 +317,116 @@ layout included, so a replacement that is started from
 `mdbook-tsitter css` keeps it.
 
 <!-- ANCHOR_END: side-by-side -->
+
+## Hand-marked tokens
+
+<!-- ANCHOR: marks -->
+
+A grammar sees syntax only. A language server also knows that one name is a
+method and another a local, and a book about it needs to show that. Add the
+`lsp` annotation to a block, and wrap text in `§token|text§`, where `token` is
+an LSP semantic token type, optionally followed by modifiers, separated by
+dots.
+
+````markdown
+```rust,lsp
+enum §enum|E§ { A, B }
+§function.defaultLibrary|scan§(list, print);
+```
+````
+
+In such a block `§` is the marker: text alternates between code and tokens,
+and nothing else is read, so it works the same in any language, `$` and `${…}`
+included, in strings and comments too. In the rare code that contains a `§`,
+write `§§` for one:
+
+````markdown
+```bash,lsp
+echo $HOME is §variable|home§ and costs §§5
+```
+````
+
+An unbalanced `§` or a token without a valid `type|` is reported and the block
+is skipped. To read `§` this way in every block of a language, set
+`lsp = true` for it under `[preprocessor.tsitter.languages]`.
+
+To recolour a token, set the CSS variable named after it, anywhere in your
+`additional-css`:
+
+```css
+:root {
+  --lsp-enum: #d699b6;
+  --lsp-method: #e69875;
+  --lsp-mod-deprecated: #859289;
+}
+```
+
+`--lsp-<type>` colours a token type, written in lowercase (`--lsp-enummember`),
+and `--lsp-mod-<modifier>` a modifier (`--lsp-mod-defaultlibrary`). No selectors
+or specificity to think about, and it works the same in every theme, Everforest
+included. Variables left unset keep the bundled colours.
+
+The bundled stylesheets know every token type and modifier of m2-ls and
+rust-analyzer, and the standard ones of the protocol, in every mdBook theme and
+in Everforest. A token type has the colour of the tree-sitter capture closest to
+it (an `enum` is coloured like a `type`). A modifier leaves the colour of its
+type alone until you set `--lsp-mod-<modifier>`; `strong`, `emphasis`, `link`,
+`deprecated` and `intraDocLink` also set bold, italic, underline and
+strike-through.
+
+Modifiers are what make marks expressive, because they combine with any type.
+Compound selectors style exactly a type with a modifier:
+
+```css
+:root { --lsp-mod-controlflow: var(--ts-orange); }   /* `match`, `if`, `.await` */
+.lsp-variable.lsp-mod-mutable { text-decoration: underline; }
+.lsp-function.lsp-mod-async { font-style: italic; }
+code[data-language="rust"] .lsp-mod-unsafe { color: var(--ts-red); }
+```
+
+Token and modifier names are not limited to the LSP standard; a server's own
+types work too. The bundled stylesheets colour the standard ones, and anything
+else stays plain until you give it a rule. Map it to one of the colour roles
+(`--ts-type`, `--ts-function`, `--ts-keyword`, `--ts-string`, `--ts-number`,
+`--ts-special`, …) or a hue (`--ts-orange`, `--ts-blue`, …), which every mdBook
+theme and Everforest redefine, and one line covers all of them:
+
+```css
+.lsp-mything { color: var(--ts-special); }
+```
+
+For more than colour, the span is `<span class="lsp-function lsp-mod-defaultlibrary">`
+inside a `<code data-language="…">`, so ordinary selectors work too:
+`code[data-language="m2"] .lsp-method { font-style: italic; }`.
+
+- The markers are removed before the code is parsed, so the grammar, the Copy
+  button and the Run button see plain code.
+- A token can span several grammar tokens, such as `std::mem::drop`, and styles
+  each of them. Tokens do not nest.
+
+## Marks and Neovim
+
+<!-- ANCHOR: marks-nvim -->
+
+`tools/lsp-marks` is a Neovim plugin (add it to the runtime path) that converts in
+both directions:
+
+- `:[range]LspMarksYank` copies the semantic tokens of the language server
+  attached to the buffer as marks. It uses the server of your running editor,
+  with your own settings, and leaves out what a grammar already colours.
+- `:LspMarksPreview [filetype]` shows a buffer written in marks as highlighted
+  code in a split that follows every edit. Markers are stripped first, so
+  tree-sitter parses clean code, and tokens are coloured with `@lsp.type.*`,
+  `@lsp.mod.*` and `@lsp.typemod.*`, as Neovim colours real semantic tokens.
+
+To generate marks without an editor, run
+`nvim --headless -l tools/lsp-marks/headless.lua <file> [first:last]`; it starts the
+server itself. It is a bare LSP client, so it works with any server that
+speaks semantic tokens.
+
+<!-- ANCHOR_END: marks-nvim -->
+
+<!-- ANCHOR_END: marks -->
 
 ## Grammar sources
 
