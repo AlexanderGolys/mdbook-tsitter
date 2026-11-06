@@ -15,11 +15,9 @@
 //! # rev = "v1.0.0"                             # optional; tag, branch or commit
 //! # location = "mylang"                        # optional; grammar subdirectory
 //!
-//! # Deprecated: point at a compiled parser and a highlights query.
+//! # Queries of the grammar's own can be replaced, one by one.
 //! [preprocessor.tsitter.languages.lua]
-//! library = "parsers/libtree-sitter-lua.so"   # compiled grammar (relative to book root)
 //! highlights = "queries/lua/highlights.scm"    # tree-sitter highlights query
-//! # symbol = "tree_sitter_lua"                 # optional; defaults to tree_sitter_<name>
 //! # injections = "queries/lua/injections.scm"  # optional
 //! # locals = "queries/lua/locals.scm"          # optional
 //! # aliases = ["lua"]                           # fence tags; defaults to the table key
@@ -66,9 +64,11 @@ impl Default for Config {
     }
 }
 
-/// One dynamically loaded grammar, taken from a compiled parser on disk
-/// (`library`), a git repository (`git`), or the built-in grammar list.
+/// One grammar, taken from a git repository (`git`) or the built-in grammar
+/// list. An unknown key is an error, so a setting that no longer exists, such as
+/// 3.x's `library`, is reported instead of silently ignored.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LanguageConfig {
     /// URL of the grammar's git repository, fetched and compiled on demand;
     /// defaults to the built-in list's repository for the language.
@@ -80,16 +80,8 @@ pub struct LanguageConfig {
     /// contain several grammars; found from the repository's
     /// `tree-sitter.json` or the built-in list when not given.
     pub location: Option<String>,
-    /// Path to the compiled parser shared object (`.so` on Linux, `.dylib` on
-    /// macOS, `.dll` on Windows). Deprecated in favour of the built-in list
-    /// and `git`; a build using it prints a warning.
-    pub library: Option<String>,
-    /// The parser's exported constructor symbol in `library`; defaults to
-    /// `tree_sitter_<name>` (with `-` mapped to `_`). Deprecated with
-    /// `library`.
-    pub symbol: Option<String>,
-    /// Path to the highlights query (`highlights.scm`); required with
-    /// `library`, defaults to the fetched grammar's own.
+    /// Path to the highlights query (`highlights.scm`); defaults to the
+    /// grammar's own.
     pub highlights: Option<String>,
     /// Optional injections query for embedded languages.
     pub injections: Option<String>,
@@ -113,5 +105,31 @@ impl Config {
             .get::<Self>("preprocessor.tsitter")
             .context("invalid [preprocessor.tsitter] configuration")
             .map(Option::unwrap_or_default)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn settings_removed_in_4_0_are_reported() {
+        for key in ["library", "symbol"] {
+            let error = serde_json::from_value::<LanguageConfig>(json!({ key: "parsers/lua.so" }))
+                .unwrap_err()
+                .to_string();
+            assert!(error.contains(&format!("unknown field `{key}`")), "{error}");
+        }
+    }
+
+    #[test]
+    fn a_language_with_known_keys_is_read() {
+        let language: LanguageConfig = serde_json::from_value(
+            json!({ "git": "https://example.com/g", "aliases": ["g"], "lsp": true }),
+        )
+        .unwrap();
+        assert!(language.lsp);
+        assert_eq!(language.aliases, ["g"]);
     }
 }

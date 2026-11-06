@@ -136,7 +136,7 @@ fn unknown_language(name: &str) -> anyhow::Error {
     };
     anyhow!(
         "language `{name}` is not in the built-in grammar list; set `git` to its grammar \
-         repository or `library` to a compiled parser.{hint}"
+         repository or to a local checkout.{hint}"
     )
 }
 

@@ -13,19 +13,17 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::{anyhow, bail, Context, Result};
-use libloading::{Library, Symbol};
+use anyhow::{anyhow, Context, Result};
 use tree_sitter::Language;
 use tree_sitter_highlight::{
     Error as HighlightError, Highlight, HighlightConfiguration, HighlightEvent, Highlighter,
     HtmlRenderer,
 };
-use tree_sitter_language::LanguageFn;
 
 use crate::config::{Config, LanguageConfig};
 use crate::fetch::{FetchedGrammar, GrammarQueries, GrammarRepo};
 use crate::semantic::Mark;
-use crate::{known, predicates, render, warn};
+use crate::{predicates, render};
 
 /// All grammars known to a single preprocessor run. Each grammar is stored once
 /// in `configs` and reachable through every fence tag (alias) in `by_alias`.
@@ -41,10 +39,6 @@ pub struct Registry {
     /// the injection callback always declines, so blocks render with only their
     /// host grammar.
     inject: bool,
-    /// Dynamically loaded parser libraries, kept alive for as long as the
-    /// [`Language`]s derived from them are in use. Declared last so it drops
-    /// after `configs`.
-    _libraries: Vec<Library>,
 }
 
 impl Registry {
@@ -53,14 +47,12 @@ impl Registry {
         let mut configs: Vec<HighlightConfiguration> = Vec::new();
         let mut by_alias: HashMap<String, usize> = HashMap::new();
         let mut lsp: Vec<bool> = Vec::new();
-        let mut libraries: Vec<Library> = Vec::new();
 
         for (name, lang_cfg) in &config.languages {
-            let (cfg, library) = load_dynamic(name, lang_cfg, root, config.inject)?;
+            let cfg = load_dynamic(name, lang_cfg, root, config.inject)?;
             let index = configs.len();
             configs.push(cfg);
             lsp.push(lang_cfg.lsp);
-            libraries.extend(library);
             for alias in aliases_of(name, lang_cfg) {
                 if by_alias
                     .get(alias)
@@ -90,7 +82,6 @@ impl Registry {
             lsp,
             classes,
             inject: config.inject,
-            _libraries: libraries,
         })
     }
 
@@ -228,73 +219,51 @@ fn union_capture_names(configs: &[HighlightConfiguration]) -> Vec<String> {
     names
 }
 
-/// Prefix of the exported constructor symbol that tree-sitter parsers use, e.g.
-/// `tree_sitter_rust`. Overridable per language via the `symbol` config key.
-const SYMBOL_PREFIX: &str = "tree_sitter_";
-
-/// Load a grammar as configured in `book.toml`: from a compiled parser
-/// library, or else from its git repository (configured, or known by name).
-/// `root` is the book project root that relative paths resolve against.
-/// Returns the configuration and, for a `library` grammar, the library that
-/// backs it (which the caller must keep alive; fetched parsers are kept alive
-/// by the loader).
+/// Load a grammar as configured in `book.toml` from its git repository
+/// (configured, or known by name). `root` is the book project root that
+/// relative paths resolve against.
 fn load_dynamic(
     name: &str,
     cfg: &LanguageConfig,
     root: &Path,
     inject: bool,
-) -> Result<(HighlightConfiguration, Option<Library>)> {
+) -> Result<HighlightConfiguration> {
     let configure = |language: &Language, fetched: GrammarQueries| {
         configure(name, cfg, root, inject, language.clone(), fetched)
     };
-    match (&cfg.git, &cfg.library) {
-        (Some(_), Some(_)) => {
-            bail!("language `{name}` sets both `git` and `library`; keep one")
-        }
-        (None, Some(library)) => {
-            warn(&deprecated_library(name));
-            let (language, library) = load_library(name, cfg, &resolve(root, library))?;
-            Ok((
-                configure(&language, GrammarQueries::default())?,
-                Some(library),
-            ))
-        }
-        (_, None) => {
-            let grammar = FetchedGrammar::fetch(name, &GrammarRepo::configured(name, cfg, root)?)?;
-            let language = grammar.compile()?;
-            let reading = || format!("reading the queries of `{name}`");
-            // A known grammar prefers the queries tested against its pinned
-            // revision, which are richer than most repositories' own; its own
-            // are the fallback, and the only source for other grammars.
-            let preferred = match grammar.is_known() {
-                true => grammar.pinned_queries(),
-                false => grammar.own_queries(),
+    let grammar = FetchedGrammar::fetch(name, &GrammarRepo::configured(name, cfg, root)?)?;
+    let language = grammar.compile()?;
+    let reading = || format!("reading the queries of `{name}`");
+    // A known grammar prefers the queries tested against its pinned revision,
+    // which are richer than most repositories' own; its own are the fallback,
+    // and the only source for other grammars.
+    let preferred = match grammar.is_known() {
+        true => grammar.pinned_queries(),
+        false => grammar.own_queries(),
+    }
+    .with_context(reading)?;
+    let preferred_error = match preferred.map(|queries| configure(&language, queries)) {
+        Some(Ok(config)) => return Ok(config),
+        Some(Err(error)) => Some(error),
+        None => None,
+    };
+    let own = match grammar.is_known() {
+        true => grammar.own_queries().with_context(reading)?,
+        false => None,
+    };
+    match (own, preferred_error) {
+        (Some(own), error) => {
+            if let Some(error) = error {
+                eprintln!(
+                    "mdbook-tsitter: `{name}`: nvim-treesitter's queries do not match its \
+                     parser ({}); using its own",
+                    first_line(&error)
+                );
             }
-            .with_context(reading)?;
-            let preferred_error = match preferred.map(|queries| configure(&language, queries)) {
-                Some(Ok(config)) => return Ok((config, None)),
-                Some(Err(error)) => Some(error),
-                None => None,
-            };
-            let own = match grammar.is_known() {
-                true => grammar.own_queries().with_context(reading)?,
-                false => None,
-            };
-            match (own, preferred_error) {
-                (Some(own), error) => {
-                    if let Some(error) = error {
-                        eprintln!(
-                            "mdbook-tsitter: `{name}`: nvim-treesitter's queries do not match its \
-                             parser ({}); using its own",
-                            first_line(&error)
-                        );
-                    }
-                    Ok((configure(&language, own)?, None))
-                }
-                (None, Some(error)) => Err(error),
-                (None, None) => Ok((configure(&language, GrammarQueries::default())?, None)),
-            }
+            configure(&language, own)
         }
+        (None, Some(error)) => Err(error),
+        (None, None) => configure(&language, GrammarQueries::default()),
     }
 }
 
@@ -303,19 +272,6 @@ fn first_line(error: &anyhow::Error) -> String {
     let cause = error.root_cause().to_string();
     let line = cause.lines().next().unwrap_or_default();
     line.trim_end_matches(':').to_string()
-}
-
-/// The deprecation notice for a language configured with `library`.
-fn deprecated_library(name: &str) -> String {
-    let replacement = if known::lookup(name).is_some() {
-        "remove `library` and `symbol` to fetch the grammar from the built-in list"
-    } else {
-        "replace `library` and `symbol` with `git`, the grammar's repository URL or local path"
-    };
-    format!(
-        "`{name}`: `library` is deprecated and will be removed in a future major release; \
-         {replacement}"
-    )
 }
 
 /// Build the highlight configuration of `language` from its `fetched`
@@ -359,27 +315,6 @@ fn configure(
 
     HighlightConfiguration::new(language, name, &highlights, &injections, &locals)
         .with_context(|| format!("invalid tree-sitter queries for `{name}`"))
-}
-
-/// Load a compiled parser shared library and its language constructor.
-fn load_library(name: &str, cfg: &LanguageConfig, path: &Path) -> Result<(Language, Library)> {
-    let symbol = cfg
-        .symbol
-        .clone()
-        .unwrap_or_else(|| format!("{SYMBOL_PREFIX}{}", name.replace('-', "_")));
-
-    // SAFETY: we load a tree-sitter parser whose exported symbol is the standard
-    // `extern "C" fn() -> *const ()` language constructor. The library is
-    // returned to the caller so it outlives the `Language` derived from it.
-    let library = unsafe { Library::new(path) }
-        .with_context(|| format!("loading parser `{}`", path.display()))?;
-    let language: Language = unsafe {
-        let constructor: Symbol<unsafe extern "C" fn() -> *const ()> = library
-            .get(symbol.as_bytes())
-            .with_context(|| format!("symbol `{symbol}` not found in {}", path.display()))?;
-        LanguageFn::from_raw(*constructor).into()
-    };
-    Ok((language, library))
 }
 
 /// Resolve a possibly-relative path against the book root.

@@ -1,3 +1,3 @@
-# Upgrading from 2.x
+# Upgrading
 
 {{#include ../../../../README.md:upgrading}}

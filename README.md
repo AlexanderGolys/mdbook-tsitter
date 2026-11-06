@@ -16,15 +16,14 @@
 
 `mdbook-tsitter` is an mdBook preprocessor that parses fenced code blocks with
 [tree-sitter](https://tree-sitter.github.io/) and renders the resulting captures
-as themeable HTML. It is grammar-agnostic: list a language it knows, name any
-grammar's git repository, or supply a compiled parser and its highlight
-queries, and the same preprocessor can handle anything from Rust and Lua to a
-language of your own.
+as themeable HTML. It is grammar-agnostic: list a language it knows, or name any
+grammar's git repository or a local checkout, and the same preprocessor can
+handle anything from Rust and Lua to a language of your own.
 
 ## Features
 
 - **Grammar-agnostic.** Over 300 common languages work by name; any other
-  tree-sitter grammar works from its repository or a prebuilt parser. Grammars
+  tree-sitter grammar works from its repository or a local checkout. Grammars
   are fetched and compiled on the first build.
 - **Structural highlighting.** Definitions, calls, types, parameters,
   properties, macros, and other syntax can receive distinct styles whenever the
@@ -66,8 +65,8 @@ cargo install mdbook-tsitter
 ```
 
 The `mdbook-tsitter` binary must be available on `PATH` when `mdbook build`
-runs. Grammars that are fetched rather than prebuilt also need `git` and a C
-compiler (`cc`, `gcc`, `clang`, or MSVC) on the build machine; see
+runs. Grammars are fetched and compiled, so the build machine also needs `git`
+and a C compiler (`cc`, `gcc`, `clang`, or MSVC) on the build machine; see
 [Grammar sources](https://spectralflux.dev/mdbook-tsitter/guide/grammar-sources.html).
 
 ## Quick start
@@ -137,8 +136,6 @@ relative to the book root.
 | `locals`     | no       | Path to a locals query for scope-aware highlighting, used instead of the grammar's. |
 | `aliases`    | no       | Code-fence names handled by this grammar; defaults to the entry's name. |
 | `lsp`        | no       | `false` by default. Set `true` to read `§` as a token marker in every block of the language, not only those marked `lsp`; see [Hand-marked tokens](#hand-marked-tokens). |
-| `library`    | no       | **Deprecated.** Path to a compiled parser shared library, used instead of fetching; requires `highlights`. |
-| `symbol`     | no       | **Deprecated.** Constructor symbol in `library`; defaults to `tree_sitter_<name>` with `-` changed to `_`. |
 
 A language may need its own table when it carries several keys:
 
@@ -485,13 +482,6 @@ git = "../tree-sitter-mylang"
 To use different queries, such as your own, set `highlights` (and optionally
 `injections` and `locals`) to query files in your book.
 
-### From a compiled parser (deprecated)
-
-A language may still name a prebuilt parser shared library with `library` (and
-its constructor with `symbol`), with `highlights` pointing at its query. This is
-deprecated and prints a warning; see
-[Upgrading from 2.x](https://spectralflux.dev/mdbook-tsitter/guide/upgrading.html) to replace it.
-
 <!-- ANCHOR_END: grammar-sources -->
 
 ## Theming
@@ -582,24 +572,32 @@ and left unstyled.
 
 <!-- ANCHOR_END: theming -->
 
-## Upgrading from 2.x
+## Upgrading
 
 <!-- ANCHOR: upgrading -->
 
-Configurations written for 2.x keep working, and each deprecated setting prints
-a warning naming its replacement. The deprecated settings will be removed in the
-next major release.
+### From 3.x and 2.x
 
-- **`library` and `symbol`.** For a language from the
+4.0 removes what 2.x and 3.x had deprecated and reports what it no longer
+understands.
+
+- **`library` and `symbol` are removed.** A language that still sets either
+  fails the build with ``unknown field `library` ``, and so does any other
+  setting a language table does not know. For a language from the
   [built-in list](https://spectralflux.dev/mdbook-tsitter/guide/grammar-sources.html#from-the-built-in-list),
   remove them along with the `highlights` path: the grammar and its queries are
   fetched instead. Any other grammar is named by `git`, its repository URL or a
   path to a local checkout.
-- **A copy of the bundled stylesheet in `additional-css`.** The stylesheet is
-  now embedded, so remove the copy, or keep only your own changes in it. A
-  copy that replaces the bundled theme moves to `theme/highlight_ts.css`.
+- **A copy of the bundled stylesheet in `additional-css`** is no longer reported.
+  The stylesheet is embedded, so remove the copy, or keep only your own changes
+  in it. A copy that replaces the bundled theme belongs in
+  `theme/highlight_ts.css`.
+- **The library API changes.** `LanguageConfig` loses `library` and `symbol`,
+  gains `lsp`, and rejects unknown keys. Code that builds one with a struct
+  literal must be updated, and the `libloading` and `tree-sitter-language`
+  dependencies are gone.
 
-A 2.x configuration such as
+A 3.x or 2.x configuration such as
 
 ```toml
 [preprocessor.tsitter.languages.rust]
@@ -626,10 +624,6 @@ rev = "v1.0.0"
 ```
 
 and the committed parsers, queries, and stylesheet can be deleted.
-
-Highlighting from nvim-treesitter style queries is also more faithful in 3.0:
-`#contains?` and Vim's `\c` regex flag are evaluated, and spell-checking and
-helper captures no longer strip the colour from the nodes they mark.
 
 <!-- ANCHOR_END: upgrading -->
 

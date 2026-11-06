@@ -20,7 +20,6 @@ pub mod theme;
 
 use anyhow::Context;
 use mdbook_preprocessor::book::{Book, BookItem};
-use mdbook_preprocessor::config::HtmlConfig;
 use mdbook_preprocessor::errors::Result;
 use mdbook_preprocessor::{Preprocessor, PreprocessorContext};
 
@@ -31,9 +30,6 @@ use crate::native::NativeFeatures;
 /// The bundled class-based stylesheet, covering mdBook's built-in themes.
 pub const DEFAULT_CSS: &str = include_str!("../assets/treesitter.css");
 
-/// Text in the bundled stylesheet's header comment, which marks a copy of it.
-const DEFAULT_CSS_SIGNATURE: &str = "Default theme for mdbook-treesitter";
-
 /// Cascade layer holding the embedded stylesheet. Unlayered rules beat layered
 /// ones whatever their order, so the book's own `additional-css` overrides it
 /// even though the embedded copy comes later in the page.
@@ -43,25 +39,6 @@ const CSS_LAYER: &str = "mdbook-tsitter";
 /// runs to its closing tag, so blank lines inside the CSS are kept.
 fn embedded_stylesheet(css: &str) -> String {
     format!("\n\n<style>\n@layer {CSS_LAYER} {{\n{css}}}\n</style>\n")
-}
-
-/// Warn about copies of the bundled stylesheet in `additional-css`: books set
-/// up before it was embedded had to add one, which is now redundant.
-fn warn_about_copied_stylesheets(root: &std::path::Path, html: &HtmlConfig) {
-    for stylesheet in &html.additional_css {
-        let is_copy = std::fs::read_to_string(root.join(stylesheet))
-            .is_ok_and(|css| css.contains(DEFAULT_CSS_SIGNATURE));
-        if is_copy {
-            warn(&format!(
-                "`{}` in `additional-css` is a copy of the bundled stylesheet, which is now \
-                 embedded automatically; adding it is deprecated. Remove it, keep only your own \
-                 changes in it, or move it to `{}` in the theme directory if it replaces the \
-                 bundled theme",
-                stylesheet.display(),
-                theme::THEME_STYLESHEET,
-            ));
-        }
-    }
 }
 
 /// Print a warning about the configuration; the build continues.
@@ -84,7 +61,6 @@ impl Preprocessor for TreeSitterPreprocessor {
         let html = ctx.config.html_config().unwrap_or_default();
         let markdown_options = markdown::mdbook_markdown_options(&html);
         let embedded_css = if config.default_css {
-            warn_about_copied_stylesheets(&ctx.root, &html);
             Some(embedded_stylesheet(&theme::stylesheet(
                 &html.theme_dir(&ctx.root),
             )?))
@@ -158,10 +134,5 @@ mod tests {
                 assert_eq!(chapter.content, "Hello");
             }
         }
-    }
-
-    #[test]
-    fn default_stylesheet_carries_its_signature() {
-        assert!(DEFAULT_CSS.contains(DEFAULT_CSS_SIGNATURE));
     }
 }
