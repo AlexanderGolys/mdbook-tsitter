@@ -15,6 +15,7 @@ pub mod markdown;
 pub mod native;
 pub mod predicates;
 pub mod render;
+pub mod semantic;
 pub mod theme;
 
 use anyhow::Context;

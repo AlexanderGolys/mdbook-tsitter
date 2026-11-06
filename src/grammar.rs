@@ -16,11 +16,15 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, bail, Context, Result};
 use libloading::{Library, Symbol};
 use tree_sitter::Language;
-use tree_sitter_highlight::{Highlight, HighlightConfiguration, Highlighter, HtmlRenderer};
+use tree_sitter_highlight::{
+    Error as HighlightError, Highlight, HighlightConfiguration, HighlightEvent, Highlighter,
+    HtmlRenderer,
+};
 use tree_sitter_language::LanguageFn;
 
 use crate::config::{Config, LanguageConfig};
 use crate::fetch::{FetchedGrammar, GrammarQueries, GrammarRepo};
+use crate::semantic::Mark;
 use crate::{known, predicates, render, warn};
 
 /// All grammars known to a single preprocessor run. Each grammar is stored once
@@ -30,6 +34,8 @@ use crate::{known, predicates, render, warn};
 pub struct Registry {
     configs: Vec<HighlightConfiguration>,
     by_alias: HashMap<String, usize>,
+    /// Whether each of `configs` reads `§` as a token marker in every block.
+    lsp: Vec<bool>,
     classes: Vec<Vec<u8>>,
     /// Whether embedded languages are resolved and highlighted. When `false`,
     /// the injection callback always declines, so blocks render with only their
@@ -46,12 +52,14 @@ impl Registry {
     pub fn build(root: &Path, config: &Config) -> Result<Self> {
         let mut configs: Vec<HighlightConfiguration> = Vec::new();
         let mut by_alias: HashMap<String, usize> = HashMap::new();
+        let mut lsp: Vec<bool> = Vec::new();
         let mut libraries: Vec<Library> = Vec::new();
 
         for (name, lang_cfg) in &config.languages {
             let (cfg, library) = load_dynamic(name, lang_cfg, root, config.inject)?;
             let index = configs.len();
             configs.push(cfg);
+            lsp.push(lang_cfg.lsp);
             libraries.extend(library);
             for alias in aliases_of(name, lang_cfg) {
                 if by_alias
@@ -79,26 +87,39 @@ impl Registry {
         Ok(Self {
             configs,
             by_alias,
+            lsp,
             classes,
             inject: config.inject,
             _libraries: libraries,
         })
     }
 
+    /// Whether every block fenced `lang` reads `§` as a token marker.
+    pub fn lsp_by_default(&self, lang: &str) -> bool {
+        self.by_alias
+            .get(lang)
+            .is_some_and(|&index| self.lsp[index])
+    }
+
     /// Highlight `source` as `lang`, or `None` if no grammar handles that fence
     /// tag (the block is then left untouched). Embedded languages are resolved
     /// through the same alias table, so an injected block in an unregistered
     /// language is simply left unhighlighted rather than erroring.
-    pub fn highlight(&self, lang: &str, source: &str) -> Option<Result<String>> {
+    pub fn highlight(&self, lang: &str, source: &str, marks: &[Mark]) -> Option<Result<String>> {
         let config = self.config_for(lang)?;
-        Some(self.render(config, source))
+        Some(self.render(config, source, marks))
     }
 
     /// Render one block. Inlined here (rather than in `render`) so the injection
     /// callback and the host config share the `&self` lifetime — the borrow
     /// checker resolves the highlighter's internal lifetime locally, mirroring
     /// tree-sitter-highlight's own C binding.
-    fn render(&self, config: &HighlightConfiguration, source: &str) -> Result<String> {
+    fn render(
+        &self,
+        config: &HighlightConfiguration,
+        source: &str,
+        marks: &[Mark],
+    ) -> Result<String> {
         let mut highlighter = Highlighter::new();
         let events = highlighter
             .highlight(config, source.as_bytes(), None, |name: &str| {
@@ -109,6 +130,11 @@ impl Registry {
             })
             .context("tree-sitter highlighting failed")?;
 
+        // Each mark is a highlight of its own, numbered after the grammars' captures.
+        let first_mark = self.classes.len();
+        let mark_classes: Vec<Vec<u8>> = marks.iter().map(|mark| mark.class_attribute()).collect();
+        let events = overlay_marks(events, marks, first_mark);
+
         let mut renderer = HtmlRenderer::new();
         renderer
             .render(
@@ -117,7 +143,13 @@ impl Registry {
                 &|highlight: Highlight, out: &mut Vec<u8>| {
                     // An out-of-range index would mean a capture we never configured;
                     // fall back to an empty attribute rather than panic.
-                    if let Some(attr) = self.classes.get(highlight.0) {
+                    let attr = self.classes.get(highlight.0).or_else(|| {
+                        highlight
+                            .0
+                            .checked_sub(first_mark)
+                            .and_then(|mark| mark_classes.get(mark))
+                    });
+                    if let Some(attr) = attr {
                         out.extend_from_slice(attr);
                     }
                 },
@@ -130,6 +162,49 @@ impl Registry {
     fn config_for(&self, lang: &str) -> Option<&HighlightConfiguration> {
         self.by_alias.get(lang).map(|&index| &self.configs[index])
     }
+}
+
+/// `events` with each mark laid over the source it covers, as highlight
+/// number `first_mark` plus its position in `marks`. A mark is opened and
+/// closed around every piece of source it covers, so it never straddles the
+/// start or end of a capture and the spans stay nested.
+fn overlay_marks<'a>(
+    events: impl Iterator<Item = Result<HighlightEvent, HighlightError>> + 'a,
+    marks: &'a [Mark],
+    first_mark: usize,
+) -> impl Iterator<Item = Result<HighlightEvent, HighlightError>> + 'a {
+    events.flat_map(move |event| match event {
+        Ok(HighlightEvent::Source { start, end }) => {
+            let mut pieces = Vec::new();
+            let mut cursor = start;
+            for (index, mark) in marks.iter().enumerate() {
+                let covered = mark.range.start.max(start)..mark.range.end.min(end);
+                if covered.is_empty() {
+                    continue;
+                }
+                if covered.start > cursor {
+                    pieces.push(Ok(HighlightEvent::Source {
+                        start: cursor,
+                        end: covered.start,
+                    }));
+                }
+                pieces.push(Ok(HighlightEvent::HighlightStart(Highlight(
+                    first_mark + index,
+                ))));
+                pieces.push(Ok(HighlightEvent::Source {
+                    start: covered.start,
+                    end: covered.end,
+                }));
+                pieces.push(Ok(HighlightEvent::HighlightEnd));
+                cursor = covered.end;
+            }
+            if cursor < end {
+                pieces.push(Ok(HighlightEvent::Source { start: cursor, end }));
+            }
+            pieces
+        }
+        other => vec![other],
+    })
 }
 
 /// The fence tags a configured language answers to: its explicit `aliases`, or

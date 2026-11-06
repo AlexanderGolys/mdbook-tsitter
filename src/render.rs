@@ -17,7 +17,7 @@ pub fn class_attributes(names: &[String]) -> Vec<Vec<u8>> {
     names.iter().map(|name| class_attribute(name)).collect()
 }
 
-fn class_attribute(name: &str) -> Vec<u8> {
+pub fn class_attribute(name: &str) -> Vec<u8> {
     if name.starts_with('_') {
         return Vec::new();
     }
@@ -33,7 +33,7 @@ fn class_attribute(name: &str) -> Vec<u8> {
 
 /// Reduce a capture-name segment to characters safe and conventional in a CSS
 /// class: lowercase letters, digits and `-`.
-fn sanitize(segment: &str) -> String {
+pub fn sanitize(segment: &str) -> String {
     segment
         .chars()
         .map(|c| {

@@ -17,6 +17,7 @@ use mdbook_preprocessor::config::HtmlConfig;
 
 use crate::grammar::Registry;
 use crate::native::NativeFeatures;
+use crate::semantic::{strip_marks, MarkedSource};
 
 /// The Markdown extensions mdBook's HTML renderer parses chapters with.
 pub fn mdbook_markdown_options(html: &HtmlConfig) -> MarkdownOptions {
@@ -76,6 +77,10 @@ pub fn rewrite(
 /// Fence-info tag that opts a single block out of tree-sitter highlighting,
 /// leaving it to mdBook and its highlight.js. E.g. ```` ```rust,notreesitter ````.
 const SKIP_TAG: &str = "notreesitter";
+
+/// Fence-info tag that makes `§` the marker of hand-written semantic tokens
+/// in a block, e.g. ```` ```javascript,lsp ````.
+const LSP_TAG: &str = "lsp";
 
 /// Fence-info tag that shows a block side by side as tree-sitter and as
 /// highlight.js highlight it. E.g. ```` ```rust,compare ````.
@@ -142,7 +147,9 @@ impl FencedBlock {
         fence_tokens(&self.info)
             .into_iter()
             .skip(1)
-            .filter(|token| *token != COMPARE_TAG && !token.starts_with(PANE_PREFIX))
+            .filter(|token| {
+                *token != COMPARE_TAG && *token != LSP_TAG && !token.starts_with(PANE_PREFIX)
+            })
             .collect()
     }
 
@@ -284,7 +291,21 @@ fn highlighted_pre(
     }
     let lang = block.lang();
     let prepared = native.prepare(lang, &block.annotations(), &block.code)?;
-    let highlighted = match registry.highlight(lang, &prepared.source)? {
+    let marked = if block.has_tag(LSP_TAG) || registry.lsp_by_default(lang) {
+        match strip_marks(&prepared.source) {
+            Ok(marked) => marked,
+            Err(error) => {
+                eprintln!("mdbook-tsitter: skipping `{lang}` block: {error:#}");
+                return None;
+            }
+        }
+    } else {
+        MarkedSource {
+            source: prepared.source.clone(),
+            marks: Vec::new(),
+        }
+    };
+    let highlighted = match registry.highlight(lang, &marked.source, &marked.marks)? {
         Ok(html) => escape_preprocessor_syntax(&prepared.decorate(&html)),
         Err(error) => {
             eprintln!("mdbook-tsitter: skipping `{lang}` block: {error:#}");

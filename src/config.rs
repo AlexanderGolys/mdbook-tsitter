@@ -23,6 +23,7 @@
 //! # injections = "queries/lua/injections.scm"  # optional
 //! # locals = "queries/lua/locals.scm"          # optional
 //! # aliases = ["lua"]                           # fence tags; defaults to the table key
+//! # lsp = true                                 # optional; read `§token|text§` in every block
 //! ```
 //!
 //! Query paths given for a fetched grammar override the repository's own.
@@ -97,6 +98,11 @@ pub struct LanguageConfig {
     /// Code-fence tags this grammar handles; defaults to the table key.
     #[serde(default)]
     pub aliases: Vec<String>,
+    /// Whether every block of this language reads `§` as the marker of a
+    /// hand-written semantic token; otherwise only blocks with the `lsp`
+    /// annotation do.
+    #[serde(default)]
+    pub lsp: bool,
 }
 
 impl Config {
