@@ -318,3 +318,27 @@ pre.treesitter > code {
     row-gap: 1.5rem;
   }
 }
+
+/* Macro hygiene (a Rust block marked `hygiene`). Every token of the expansion
+   sits in a span `hygiene hygiene-<n>`: `hygiene-0` is the code as written,
+   and 1, 2, … are the contexts macros made, in order of appearance. Each span
+   is titled with the macro that made it, and the legend after the block uses
+   the same classes. Recolour one with `--hygiene-<n>`. */
+
+.hygiene-0 { background: var(--hygiene-0, color-mix(in srgb, var(--ts-gray) 12%, transparent)); }
+.hygiene-1 { background: var(--hygiene-1, color-mix(in srgb, var(--ts-blue) 22%, transparent)); }
+.hygiene-2 { background: var(--hygiene-2, color-mix(in srgb, var(--ts-orange) 22%, transparent)); }
+.hygiene-3 { background: var(--hygiene-3, color-mix(in srgb, var(--ts-green) 22%, transparent)); }
+.hygiene-4 { background: var(--hygiene-4, color-mix(in srgb, var(--ts-purple) 22%, transparent)); }
+.hygiene-5 { background: var(--hygiene-5, color-mix(in srgb, var(--ts-cyan) 22%, transparent)); }
+.hygiene-6 { background: var(--hygiene-6, color-mix(in srgb, var(--ts-red) 22%, transparent)); }
+.hygiene-7 { background: var(--hygiene-7, color-mix(in srgb, var(--ts-yellow) 22%, transparent)); }
+.hygiene-legend {
+  margin: -0.6em 0 1em;
+  font-size: 0.85em;
+}
+.hygiene-legend .hygiene {
+  padding: 0.1em 0.5em;
+  border-radius: 3px;
+  font-family: var(--mono-font, monospace);
+}

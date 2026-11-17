@@ -11,6 +11,7 @@
 
 use std::collections::HashMap;
 use std::fs;
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
@@ -22,13 +23,20 @@ use tree_sitter_highlight::{
 
 use crate::config::{Config, LanguageConfig};
 use crate::fetch::{FetchedGrammar, GrammarQueries, GrammarRepo};
-use crate::semantic::Mark;
 use crate::{predicates, render};
 
 /// All grammars known to a single preprocessor run. Each grammar is stored once
 /// in `configs` and reachable through every fence tag (alias) in `by_alias`.
 /// `classes` is the shared class table, indexed by the global capture index
 /// every config was configured against.
+/// Part of a source rendered inside a span of its own, over the grammar's
+/// highlighting: a hand-marked token, or a hygiene region.
+pub struct Overlay {
+    pub range: Range<usize>,
+    /// The span's attributes, e.g. `class="lsp-enum"`.
+    pub attribute: Vec<u8>,
+}
+
 pub struct Registry {
     configs: Vec<HighlightConfiguration>,
     by_alias: HashMap<String, usize>,
@@ -96,7 +104,7 @@ impl Registry {
     /// tag (the block is then left untouched). Embedded languages are resolved
     /// through the same alias table, so an injected block in an unregistered
     /// language is simply left unhighlighted rather than erroring.
-    pub fn highlight(&self, lang: &str, source: &str, marks: &[Mark]) -> Option<Result<String>> {
+    pub fn highlight(&self, lang: &str, source: &str, marks: &[Overlay]) -> Option<Result<String>> {
         let config = self.config_for(lang)?;
         Some(self.render(config, source, marks))
     }
@@ -109,7 +117,7 @@ impl Registry {
         &self,
         config: &HighlightConfiguration,
         source: &str,
-        marks: &[Mark],
+        marks: &[Overlay],
     ) -> Result<String> {
         let mut highlighter = Highlighter::new();
         let events = highlighter
@@ -123,7 +131,7 @@ impl Registry {
 
         // Each mark is a highlight of its own, numbered after the grammars' captures.
         let first_mark = self.classes.len();
-        let mark_classes: Vec<Vec<u8>> = marks.iter().map(|mark| mark.class_attribute()).collect();
+        let mark_classes: Vec<&Vec<u8>> = marks.iter().map(|mark| &mark.attribute).collect();
         let events = overlay_marks(events, marks, first_mark);
 
         let mut renderer = HtmlRenderer::new();
@@ -138,7 +146,7 @@ impl Registry {
                         highlight
                             .0
                             .checked_sub(first_mark)
-                            .and_then(|mark| mark_classes.get(mark))
+                            .and_then(|mark| mark_classes.get(mark).copied())
                     });
                     if let Some(attr) = attr {
                         out.extend_from_slice(attr);
@@ -148,6 +156,11 @@ impl Registry {
             .context("rendering highlighted HTML failed")?;
 
         Ok(renderer.lines().collect())
+    }
+
+    /// The grammar of `lang`, for parsing outside highlighting.
+    pub fn language(&self, lang: &str) -> Option<&Language> {
+        self.config_for(lang).map(|config| &config.language)
     }
 
     fn config_for(&self, lang: &str) -> Option<&HighlightConfiguration> {
@@ -161,7 +174,7 @@ impl Registry {
 /// start or end of a capture and the spans stay nested.
 fn overlay_marks<'a>(
     events: impl Iterator<Item = Result<HighlightEvent, HighlightError>> + 'a,
-    marks: &'a [Mark],
+    marks: &'a [Overlay],
     first_mark: usize,
 ) -> impl Iterator<Item = Result<HighlightEvent, HighlightError>> + 'a {
     events.flat_map(move |event| match event {

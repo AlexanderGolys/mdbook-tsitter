@@ -10,6 +10,7 @@
 - [Interactive blocks](./examples/interactive.md)
 - [Side-by-side blocks](./guide/side-by-side.md)
 - [Hand-marked tokens](./guide/marks.md)
+- [Macro hygiene](./guide/hygiene.md)
 - [Upgrading](./guide/upgrading.md)
 - [How it works](./guide/how-it-works.md)
 

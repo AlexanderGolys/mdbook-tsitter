@@ -9,6 +9,7 @@
 pub mod config;
 pub mod fetch;
 pub mod grammar;
+pub mod hygiene;
 pub mod known;
 pub mod manifest;
 pub mod markdown;
