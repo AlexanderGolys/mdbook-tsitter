@@ -40,6 +40,9 @@ handle anything from Rust and Lua to a language of your own.
   or the same idea in several languages.
 - **Hand-marked tokens.** In a block marked `lsp`, write `§token|text§` to
   style `text` as an LSP semantic token, for what only a language server knows.
+- **Macro hygiene.** Mark a Rust block `hygiene` to show its macro expansion,
+  each token on the background of its syntax context, as rustc's
+  `-Zunpretty=expanded,hygiene` reports it. Experimental.
 - **Language aliases and locals queries.** Match several fence names to one
   grammar and opt into scope-aware query behavior where the grammar supports it.
 - **Selective processing.** Leave individual blocks to mdBook when you need its

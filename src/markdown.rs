@@ -15,8 +15,9 @@ use mdbook_markdown::pulldown_cmark::{CodeBlockKind, Event, Tag, TagEnd};
 use mdbook_markdown::{new_cmark_parser, MarkdownOptions};
 use mdbook_preprocessor::config::HtmlConfig;
 
-use crate::grammar::Registry;
-use crate::native::NativeFeatures;
+use crate::grammar::{Overlay, Registry};
+use crate::hygiene;
+use crate::native::{NativeFeatures, PreparedBlock};
 use crate::semantic::{strip_marks, MarkedSource};
 
 /// The Markdown extensions mdBook's HTML renderer parses chapters with.
@@ -81,6 +82,10 @@ const SKIP_TAG: &str = "notreesitter";
 /// Fence-info tag that makes `§` the marker of hand-written semantic tokens
 /// in a block, e.g. ```` ```javascript,lsp ````.
 const LSP_TAG: &str = "lsp";
+
+/// Fence-info tag that shows a Rust block's macro expansion coloured by
+/// syntax context, e.g. ```` ```rust,hygiene ````.
+const HYGIENE_TAG: &str = "hygiene";
 
 /// Fence-info tag that shows a block side by side as tree-sitter and as
 /// highlight.js highlight it. E.g. ```` ```rust,compare ````.
@@ -290,6 +295,9 @@ fn highlighted_pre(
         return None;
     }
     let lang = block.lang();
+    if block.has_tag(HYGIENE_TAG) {
+        return hygiene_pre(block, registry, native);
+    }
     let prepared = native.prepare(lang, &block.annotations(), &block.code)?;
     let marked = if block.has_tag(LSP_TAG) || registry.lsp_by_default(lang) {
         match strip_marks(&prepared.source) {
@@ -305,21 +313,79 @@ fn highlighted_pre(
             marks: Vec::new(),
         }
     };
-    let highlighted = match registry.highlight(lang, &marked.source, &marked.marks)? {
+    let overlays: Vec<Overlay> = marked
+        .marks
+        .iter()
+        .map(|mark| Overlay {
+            range: mark.range.clone(),
+            attribute: mark.class_attribute(),
+        })
+        .collect();
+    let highlighted = match registry.highlight(lang, &marked.source, &overlays)? {
         Ok(html) => escape_preprocessor_syntax(&prepared.decorate(&html)),
         Err(error) => {
             eprintln!("mdbook-tsitter: skipping `{lang}` block: {error:#}");
             return None;
         }
     };
+    Some(pre_element(lang, prepared, &highlighted))
+}
+
+/// The `<pre>` of a highlighted block.
+fn pre_element(lang: &str, prepared: PreparedBlock, highlighted: &str) -> String {
     let pre_class = class_list(PRE_CLASS, prepared.pre_classes);
     let code_class = class_list(NO_HIGHLIGHT_CLASS, prepared.code_classes);
     // The fence tag goes in a data attribute rather than a `language-*` class:
     // mdBook's highlight.js re-highlights any block whose `language-*` class
     // names a language it knows, ignoring `no-highlight`, and its colours would
     // override ours.
-    Some(format!(
+    format!(
         "<pre class=\"{pre_class}\"><code class=\"{code_class}\" {LANGUAGE_ATTRIBUTE}=\"{lang}\">{highlighted}</code></pre>",
+    )
+}
+
+/// A Rust block marked `hygiene`: its macro expansion, each token on the
+/// background of its syntax context, and a legend naming the contexts.
+fn hygiene_pre(
+    block: &FencedBlock,
+    registry: &Registry,
+    native: &NativeFeatures,
+) -> Option<String> {
+    let lang = block.lang();
+    let skip = |error: anyhow::Error| {
+        eprintln!("mdbook-tsitter: skipping `{lang}` hygiene block: {error:#}");
+    };
+    let language = registry.language(lang)?;
+    let annotations = block.annotations();
+    let edition = annotations.iter().find_map(|a| a.strip_prefix("edition"));
+    let expansion = hygiene::expand(&block.code, edition).map_err(skip).ok()?;
+    let (regions, labels) = hygiene::regions(&expansion, language).map_err(skip).ok()?;
+    // The expansion is not the code as written, so it is never run.
+    let mut annotations: Vec<&str> = annotations
+        .into_iter()
+        .filter(|a| *a != HYGIENE_TAG)
+        .collect();
+    annotations.push("noplayground");
+    let prepared = native.prepare(lang, &annotations, &expansion.source)?;
+    let overlays: Vec<Overlay> = regions
+        .iter()
+        .map(|region| Overlay {
+            range: region.range.clone(),
+            attribute: hygiene::attribute(region.index, &labels[region.index]),
+        })
+        .collect();
+    let highlighted = match registry.highlight(lang, &prepared.source, &overlays)? {
+        Ok(html) => escape_preprocessor_syntax(&prepared.decorate(&html)),
+        Err(error) => {
+            skip(error);
+            return None;
+        }
+    };
+    let legend = hygiene::legend(&labels);
+    Some(format!(
+        "{}
+{legend}",
+        pre_element(lang, prepared, &highlighted)
     ))
 }
 
@@ -350,7 +416,7 @@ fn longest_backtick_run(text: &str) -> usize {
 }
 
 /// `text` with the characters HTML gives meaning to written as entities.
-fn escape_html(text: &str) -> String {
+pub(crate) fn escape_html(text: &str) -> String {
     text.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
